@@ -1,68 +1,68 @@
 {
-  "commit": "9b19d334ab3e9901b3ff13f479d6b787e226a4e5",
-  "version": "0.32.10-1-g9b19d33",
-  "id": "0.32.10-1-g9b19d33",
-  "date": "2025-11-15T21:13:22Z",
+  "commit": "d3f3f9b17e6a26621bea980f7d71712d3daa57fd",
+  "version": "0.32.10-2-gd3f3f9b",
+  "id": "0.32.10-2-gd3f3f9b",
+  "date": "2025-11-15T21:39:35Z",
   "files": [
     {
       "name": "ugly-duckling-mk5-release.bin",
-      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-1-g9b19d33/ugly-duckling-mk5-release.bin",
-      "sha256": "a71d72700699902c4dd98068f80d49a0e7e53ae886947de456018c9e483b55d9"
+      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-2-gd3f3f9b/ugly-duckling-mk5-release.bin",
+      "sha256": "05628971db8b8f3c907e3e8e25b52da74b44bbb1823433d0cbc59d7afeb8a01b"
     },
     {
       "name": "ugly-duckling-mk6-debug.bin",
-      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-1-g9b19d33/ugly-duckling-mk6-debug.bin",
-      "sha256": "5b22efce1f3d0f1d471068c4a50f3d20b94607954e2465231f4910ba86703c1e"
+      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-2-gd3f3f9b/ugly-duckling-mk6-debug.bin",
+      "sha256": "8e3d08c7306bb5897c3c28fd12a483e66c248c9424807f44d6a3825908735a74"
     },
     {
       "name": "ugly-duckling-mk6-release.bin",
-      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-1-g9b19d33/ugly-duckling-mk6-release.bin",
-      "sha256": "ecdfb8d9f9772744c8d1e0cc12a9e0dc89b9dcecc8e3a91fdd6c15133947c004"
+      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-2-gd3f3f9b/ugly-duckling-mk6-release.bin",
+      "sha256": "a821b3cb4b54ae577e0f2cff355a98b19dec5e390a9456889a6e51efe45f656d"
     },
     {
       "name": "ugly-duckling-mk7-release.bin",
-      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-1-g9b19d33/ugly-duckling-mk7-release.bin",
-      "sha256": "0532542bf82b6677bedbdbfe643996a1029744068c5ff606da7fd282d4a191b1"
+      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-2-gd3f3f9b/ugly-duckling-mk7-release.bin",
+      "sha256": "7c8df5b5bfedef64273ada34c8a2c172cc026485d9b98da0d04ce76d9e7f0235"
     },
     {
       "name": "ugly-duckling-mk8-release.bin",
-      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-1-g9b19d33/ugly-duckling-mk8-release.bin",
-      "sha256": "ba62a26a7de26ca10bb3e89a4c8d1e968cf890caa2825a566cb8ae8ab0307244"
+      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-2-gd3f3f9b/ugly-duckling-mk8-release.bin",
+      "sha256": "cb054ecd36893018e677da5b3bd70b0776d02b5ddb42c9b494e48c30b3355d77"
     },
     {
       "name": "ugly-duckling-mkX-release.bin",
-      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-1-g9b19d33/ugly-duckling-mkX-release.bin",
-      "sha256": "6076cd8800433420a435e1fe0a6d669d22074700fba35a9ba4bcc7d71305bc85"
+      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-2-gd3f3f9b/ugly-duckling-mkX-release.bin",
+      "sha256": "15456234c87788b9be4160ad102a89bb4c229aa7b26d98253454e5938ba6e7b7"
     },
     {
       "name": "ugly-duckling-mk5-release.elf",
-      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-1-g9b19d33/ugly-duckling-mk5-release.elf",
-      "sha256": "dc83a8573bb1654aee3295bcfebd62cf8890b946ecbc5f13e778d096a31c70b0"
+      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-2-gd3f3f9b/ugly-duckling-mk5-release.elf",
+      "sha256": "815ec256edcf443d913cc6b0ef0c99bb67285893f6758fd21e1d3c1a35424e62"
     },
     {
       "name": "ugly-duckling-mk6-debug.elf",
-      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-1-g9b19d33/ugly-duckling-mk6-debug.elf",
-      "sha256": "f7697e0d70cda7a827f7504c7b8b1e3c7b28cf3745ab6991f4696f0d7eb8d7bd"
+      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-2-gd3f3f9b/ugly-duckling-mk6-debug.elf",
+      "sha256": "4e75b595d64d704cdef2b4c3985af7fc374938441a7c1cdebdc6671c705ddf8a"
     },
     {
       "name": "ugly-duckling-mk6-release.elf",
-      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-1-g9b19d33/ugly-duckling-mk6-release.elf",
-      "sha256": "3c371b6938f086318ad7a9a8e27d98e26ae9d6c0221a9dadc5bbf96a31cbecd8"
+      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-2-gd3f3f9b/ugly-duckling-mk6-release.elf",
+      "sha256": "911448e9f9a92964c37c5048ccc50aee16a914487895bac726411ca34b4cbf0b"
     },
     {
       "name": "ugly-duckling-mk7-release.elf",
-      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-1-g9b19d33/ugly-duckling-mk7-release.elf",
-      "sha256": "4df089193746b5b1647cb4006bd2a48174699ac87ebae9b0a5c9935ead0baac9"
+      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-2-gd3f3f9b/ugly-duckling-mk7-release.elf",
+      "sha256": "a3ecd4a1f0af39597c715a4ffb225deed81b22fe8ad7d612ef17d4e9e319ac0e"
     },
     {
       "name": "ugly-duckling-mk8-release.elf",
-      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-1-g9b19d33/ugly-duckling-mk8-release.elf",
-      "sha256": "f6e0b0ec2ac4a142c5b063bc58c9abebafc5b3b2787c2418dd2358fab6f7bb7b"
+      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-2-gd3f3f9b/ugly-duckling-mk8-release.elf",
+      "sha256": "b5e5528fee85073598882aa3744518869b097046141067e914f8a345360e5591"
     },
     {
       "name": "ugly-duckling-mkX-release.elf",
-      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-1-g9b19d33/ugly-duckling-mkX-release.elf",
-      "sha256": "fbd7ee39082159530969ba58918549462f955fea7c05c1f7f66fd8fe1657f3b1"
+      "url": "https://kivancsikert.github.io/ugly-duckling/snapshots/ota/0.32.10-2-gd3f3f9b/ugly-duckling-mkX-release.elf",
+      "sha256": "3a6f4e757d7c36ba9eb6e59c0aef65242daed77db14d636c70db176967e700b7"
     }
   ],
   "branch": "build/native-tests"
