@@ -110,6 +110,30 @@ jobs:
             debug-${{ matrix.environment }}.zip
           if-no-files-found: error
 
+  unit-test:
+    runs-on: ubuntu-latest
+    container:
+      # Because of CMake Ninja generator support
+      image: archlinux
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Configure CMake
+        working-directory: test/unit-tests
+        run: |
+          cmake -B build-native -G Ninja
+
+      - name: Build tests
+        working-directory: test/unit-tests
+        run: |
+          cmake --build build-native
+
+      - name: Run tests
+        working-directory: test/unit-tests/build-native
+        run: |
+          ./ugly-duckling-unit-tests
+
   embedded-test:
     runs-on: ubuntu-latest
 
@@ -278,7 +302,7 @@ jobs:
   release:
     needs:
       - build
-      # - unit-test
+      - unit-test
       - embedded-test
       - e2e-test
     if: github.event_name == 'release' && github.event.action == 'published'
