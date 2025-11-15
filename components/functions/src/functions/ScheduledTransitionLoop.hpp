@@ -12,7 +12,7 @@
 #include <Time.hpp>
 
 #include <peripherals/api/TargetState.hpp>
-#include <utils/scheduling/IScheduler.hpp>
+#include <scheduling/IScheduler.hpp>
 
 using namespace std::chrono_literals;
 using namespace farmhub::kernel;

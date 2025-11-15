@@ -9,7 +9,7 @@
 #include <time.h>
 
 #include <peripherals/api/IValve.hpp>
-#include <utils/scheduling/TimeBasedScheduler.hpp>
+#include <scheduling/TimeBasedScheduler.hpp>
 
 using namespace std::chrono;
 using namespace std::chrono_literals;

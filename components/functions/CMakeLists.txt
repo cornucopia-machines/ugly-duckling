@@ -4,5 +4,6 @@ idf_component_register(
     REQUIRES
         kernel
         peripherals
+        scheduling
         utils
 )

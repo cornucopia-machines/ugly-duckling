@@ -14,10 +14,10 @@
 #include <peripherals/api/ISoilMoistureSensor.hpp>
 #include <peripherals/api/IValve.hpp>
 #include <utils/Chrono.hpp>
-#include <utils/scheduling/CompositeScheduler.hpp>
-#include <utils/scheduling/MoistureBasedScheduler.hpp>
-#include <utils/scheduling/OverrideScheduler.hpp>
-#include <utils/scheduling/TimeBasedScheduler.hpp>
+#include <scheduling/CompositeScheduler.hpp>
+#include <scheduling/MoistureBasedScheduler.hpp>
+#include <scheduling/OverrideScheduler.hpp>
+#include <scheduling/TimeBasedScheduler.hpp>
 
 using namespace std::chrono;
 using namespace farmhub::kernel::mqtt;

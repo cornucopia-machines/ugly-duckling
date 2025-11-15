@@ -8,7 +8,7 @@
 #include <peripherals/api/ISoilMoistureSensor.hpp>
 #include <peripherals/api/ITemperatureSensor.hpp>
 
-#include <utils/scheduling/MoistureKalmanFilter.hpp>
+#include <scheduling/MoistureKalmanFilter.hpp>
 
 #include "Environment.hpp"
 

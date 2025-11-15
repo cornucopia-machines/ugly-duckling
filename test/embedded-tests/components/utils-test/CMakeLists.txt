@@ -5,6 +5,7 @@ idf_component_register(
     INCLUDE_DIRS
         src
     REQUIRES
+        scheduling
         utils
         catch2
         unit-test-support

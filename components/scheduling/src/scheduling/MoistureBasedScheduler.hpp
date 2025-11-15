@@ -13,7 +13,7 @@
 #include <peripherals/api/IFlowMeter.hpp>
 #include <peripherals/api/ISoilMoistureSensor.hpp>
 
-#include <utils/scheduling/IScheduler.hpp>
+#include <scheduling/IScheduler.hpp>
 
 using namespace std::chrono_literals;
 using namespace farmhub::peripherals::api;

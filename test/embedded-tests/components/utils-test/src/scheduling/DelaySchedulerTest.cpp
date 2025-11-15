@@ -8,8 +8,8 @@
 #include <FakeLog.hpp>
 
 #include <peripherals/api/TargetState.hpp>
-#include <utils/scheduling/DelayScheduler.hpp>
-#include <utils/scheduling/IScheduler.hpp>
+#include <scheduling/DelayScheduler.hpp>
+#include <scheduling/IScheduler.hpp>
 
 using namespace std::chrono;
 using namespace std::chrono_literals;

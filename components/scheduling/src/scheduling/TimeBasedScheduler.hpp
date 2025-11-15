@@ -6,7 +6,7 @@
 #include <optional>
 
 #include <utils/Chrono.hpp>
-#include <utils/scheduling/IScheduler.hpp>
+#include <scheduling/IScheduler.hpp>
 
 namespace farmhub::utils::scheduling {
 

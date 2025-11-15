@@ -10,10 +10,10 @@
 #include <functions/ScheduledTransitionLoop.hpp>
 
 #include <peripherals/api/IDoor.hpp>
-#include <utils/scheduling/CompositeScheduler.hpp>
-#include <utils/scheduling/DelayScheduler.hpp>
-#include <utils/scheduling/LightSensorScheduler.hpp>
-#include <utils/scheduling/OverrideScheduler.hpp>
+#include <scheduling/CompositeScheduler.hpp>
+#include <scheduling/DelayScheduler.hpp>
+#include <scheduling/LightSensorScheduler.hpp>
+#include <scheduling/OverrideScheduler.hpp>
 
 using namespace farmhub::peripherals::api;
 using namespace farmhub::utils::scheduling;

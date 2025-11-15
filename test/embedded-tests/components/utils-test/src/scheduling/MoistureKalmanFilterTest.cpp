@@ -4,7 +4,7 @@
 #include <cmath>
 #include <random>
 
-#include <utils/scheduling/MoistureKalmanFilter.hpp>
+#include <scheduling/MoistureKalmanFilter.hpp>
 
 #include <FakeLog.hpp>
 

@@ -7,7 +7,7 @@
 #include <peripherals/api/IFlowMeter.hpp>
 #include <peripherals/api/ISoilMoistureSensor.hpp>
 
-#include <utils/scheduling/MoistureBasedScheduler.hpp>
+#include <scheduling/MoistureBasedScheduler.hpp>
 
 using namespace farmhub::peripherals::api;
 

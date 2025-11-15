@@ -4,7 +4,7 @@
 
 #include <FakeLog.hpp>
 
-#include <utils/scheduling/MoistureBasedScheduler.hpp>
+#include <scheduling/MoistureBasedScheduler.hpp>
 
 #include "Fakes.hpp"
 

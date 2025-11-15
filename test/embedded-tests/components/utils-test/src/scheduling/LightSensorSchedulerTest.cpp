@@ -9,7 +9,7 @@
 
 #include <peripherals/api/ILightSensor.hpp>
 #include <peripherals/api/TargetState.hpp>
-#include <utils/scheduling/LightSensorScheduler.hpp>
+#include <scheduling/LightSensorScheduler.hpp>
 
 using namespace std::chrono;
 using namespace std::chrono_literals;
