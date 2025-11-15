@@ -50,7 +50,11 @@ struct Converter<system_clock::time_point> {
         }
         time_t t = system_clock::to_time_t(src);
         tm tm {};
+#ifdef _WIN32
+        (void) localtime_s(&tm, &t);
+#else
         (void) localtime_r(&t, &tm);
+#endif
         char buf[64];
         (void) strftime(buf, sizeof(buf), "%FT%TZ", &tm);
         dst.set(buf);
@@ -61,8 +65,23 @@ struct Converter<system_clock::time_point> {
             return system_clock::time_point {};
         }
         tm tm {};
+#ifdef _WIN32
+        // Windows doesn't have strptime, use sscanf to parse ISO 8601
+        int year, month, day, hour, min, sec;
+        if (sscanf(src.as<const char*>(), "%d-%d-%dT%d:%d:%dZ",
+                   &year, &month, &day, &hour, &min, &sec) == 6) {
+            tm.tm_year = year - 1900;
+            tm.tm_mon = month - 1;
+            tm.tm_mday = day;
+            tm.tm_hour = hour;
+            tm.tm_min = min;
+            tm.tm_sec = sec;
+            tm.tm_isdst = 0;
+        }
+#else
         strptime(src.as<const char*>(), "%FT%TZ", &tm);
         tm.tm_isdst = 0;
+#endif
         return system_clock::from_time_t(mktime(&tm));
     }
 

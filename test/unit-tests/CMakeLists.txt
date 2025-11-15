@@ -32,14 +32,19 @@ set(COMPONENTS_DIR ${CMAKE_SOURCE_DIR}/../../components)
 
 include_directories(
     ${COMPONENTS_DIR}/kernel/src
+    ${COMPONENTS_DIR}/kernel/test
     ${COMPONENTS_DIR}/utils/src
     ${COMPONENTS_DIR}/peripherals-api/src
+    ${COMPONENTS_DIR}/scheduling/src
+    ${COMPONENTS_DIR}/scheduling/test
+    ${COMPONENTS_DIR}/utils/src
     ${COMPONENTS_DIR}/unit-test-support/src
 )
 
 # Collect all test source files
 file(GLOB_RECURSE TEST_SOURCES
     ${COMPONENTS_DIR}/kernel/test/*.cpp
+    ${COMPONENTS_DIR}/scheduling/test/*.cpp
 )
 
 # Collect component source files (excluding tests and ESP-IDF specific code)
