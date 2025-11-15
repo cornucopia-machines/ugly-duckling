@@ -1,7 +1,8 @@
 idf_component_register(
     SRCS
-        drivers/MotorDriver.cpp
-    INCLUDE_DIRS "."
+        src/drivers/MotorDriver.cpp
+        src/State.cpp
+    INCLUDE_DIRS "src"
     REQUIRES
         # Core ESP-IDF components
         esp_adc
