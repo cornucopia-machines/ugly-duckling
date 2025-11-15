@@ -5,8 +5,8 @@
 #include <list>
 #include <optional>
 
-#include <utils/Chrono.hpp>
 #include <scheduling/IScheduler.hpp>
+#include <utils/Chrono.hpp>
 
 namespace farmhub::utils::scheduling {
 
