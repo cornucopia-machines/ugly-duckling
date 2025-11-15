@@ -1,8 +1,8 @@
 idf_component_register(
     SRCS
-        peripherals/Motors.cpp
+        src/peripherals/Motors.cpp
     INCLUDE_DIRS
-        "."
+        src
     REQUIRES
         kernel
         peripherals-api
