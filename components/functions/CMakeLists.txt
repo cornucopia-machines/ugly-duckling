@@ -1,6 +1,6 @@
 idf_component_register(
     INCLUDE_DIRS
-        "src"
+        src
     REQUIRES
         kernel
         peripherals

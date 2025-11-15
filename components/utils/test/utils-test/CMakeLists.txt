@@ -1,0 +1,12 @@
+idf_component_register(
+    SRC_DIRS
+        src
+        src/scheduling
+    INCLUDE_DIRS
+        src
+    REQUIRES
+        utils
+        catch2
+        unit-test-support
+    WHOLE_ARCHIVE
+)
