@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
-include(../../Common.cmake)
+list(APPEND EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/components")
 
-set(TEST_COMPONENTS "kernel-test" "utils-test" "unit-test-support" CACHE STRING "List of components to test")
+include(../../Common.cmake)
 
 project(ugly-duckling-embedded-tests)
