@@ -112,22 +112,17 @@ jobs:
 
   unit-test:
     runs-on: ubuntu-latest
-    container:
-      # Because of CMake Ninja generator support
-      image: archlinux
 
     steps:
       - uses: actions/checkout@v5
 
-      - name: Configure CMake
-        working-directory: test/unit-tests
-        run: |
-          cmake -B build-native -G Ninja
-
-      - name: Build tests
-        working-directory: test/unit-tests
-        run: |
-          cmake --build build-native
+      - name: Build Project
+        uses: threeal/cmake-action@v2.1.0
+        with:
+          generator: Ninja
+          cxx-compiler: clang++
+          source-dir: test/unit-tests
+          build-dir: test/unit-tests/build-native
 
       - name: Run tests
         working-directory: test/unit-tests/build-native
