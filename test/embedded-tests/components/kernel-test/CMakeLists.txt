@@ -5,7 +5,6 @@ idf_component_register(
         src
     REQUIRES
         catch2
-        bblanchon__arduinojson
 
         kernel
 

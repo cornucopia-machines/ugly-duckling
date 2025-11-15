@@ -16,6 +16,7 @@
 static const char* const farmhubVersion = reinterpret_cast<const char*>(esp_app_get_description()->version);
 
 #include <BatteryManager.hpp>
+#include <ConfigurationFile.hpp>
 #include <Console.hpp>
 #include <CrashManager.hpp>
 #include <DebugConsole.hpp>

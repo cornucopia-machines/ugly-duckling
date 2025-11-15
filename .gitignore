@@ -19,8 +19,12 @@ dependencies*.lock
 # Clang Tidy's output
 warnings.txt
 
+# Python cache files
 __pycache__/
 .pytest_cache/
+
+# Native build for tests
+build-native/
 
 # GitHub site publishing
 /work/

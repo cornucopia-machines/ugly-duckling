@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ConfigurationFile.hpp>
 #include <FileSystem.hpp>
 #include <Manager.hpp>
 #include <Telemetry.hpp>
