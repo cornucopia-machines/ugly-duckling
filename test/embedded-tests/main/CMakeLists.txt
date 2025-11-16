@@ -1,4 +1,8 @@
-idf_component_register(SRC_DIRS "."
-                    INCLUDE_DIRS "."
-                    REQUIRES kernel-test utils-test unit-test-support
-                    WHOLE_ARCHIVE)
+idf_component_register(
+    SRC_DIRS "."
+    INCLUDE_DIRS "."
+    REQUIRES
+        kernel-test
+        unit-test-support
+    WHOLE_ARCHIVE
+)
