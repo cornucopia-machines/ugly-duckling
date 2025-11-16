@@ -112,7 +112,25 @@ jobs:
 
   unit-test:
     runs-on: ubuntu-latest
-    # if: false # Temporarily disable until Wokwi licensing is fixed
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build Project
+        uses: threeal/cmake-action@v2.1.0
+        with:
+          generator: Ninja
+          cxx-compiler: clang++
+          source-dir: test/unit-tests
+          build-dir: test/unit-tests/build-native
+
+      - name: Run tests
+        working-directory: test/unit-tests/build-native
+        run: |
+          ./ugly-duckling-unit-tests
+
+  embedded-test:
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v5
@@ -121,14 +139,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ runner.os }}-${{ env.ESP_IDF_VERSION }}-unit-test
+          key: ccache-${{ runner.os }}-${{ env.ESP_IDF_VERSION }}-embedded-test
 
       - name: esp-idf build
         uses: espressif/esp-idf-ci-action@v1
         with:
           esp_idf_version: ${{ env.ESP_IDF_VERSION }}
           target: esp32s3
-          path: test/unit-tests
+          path: test/embedded-tests
           extra_docker_args: -v  ${{ env.CCACHE_DIR }}:/root/.ccache
           command: |
             ccache --max-size=${{ env.CCACHE_MAXSIZE }} && \
@@ -143,7 +161,7 @@ jobs:
             docker run \
             -v .:/project \
             -v ./artifacts/pytest-logs:/logs \
-            -w /project/test/unit-tests \
+            -w /project/test/embedded-tests \
             -e HOME=/tmp \
             --add-host=host.docker.internal:host-gateway \
             -e WOKWI_CLI_SERVER=ws://host.docker.internal:9177 \
@@ -152,7 +170,7 @@ jobs:
             pytest \
               --embedded-services idf,wokwi \
               --root-logdir /logs \
-              ./pytest_unit-tests.py \
+              ./pytest_embedded-tests.py \
               --wokwi-timeout=120000
 
       - name: Upload pytest-embedded logs
@@ -164,9 +182,8 @@ jobs:
             artifacts/pytest-logs/**
           if-no-files-found: warn
 
-  integ-test:
+  e2e-test:
     runs-on: ubuntu-latest
-    # if: false # Temporarily disable until Wokwi licensing is fixed
 
     env:
       HOSTNAME: ""
@@ -189,14 +206,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ runner.os }}-${{ env.ESP_IDF_VERSION }}-integ-test
+          key: ccache-${{ runner.os }}-${{ env.ESP_IDF_VERSION }}-e2e-test
 
       - name: esp-idf build
         uses: espressif/esp-idf-ci-action@v1
         with:
           esp_idf_version: ${{ env.ESP_IDF_VERSION }}
           target: esp32s3
-          path: test/integ-tests
+          path: test/e2e-tests
           extra_docker_args: -v  ${{ env.CCACHE_DIR }}:/root/.ccache
           command: |
             ccache --max-size=${{ env.CCACHE_MAXSIZE }} && \
@@ -210,14 +227,14 @@ jobs:
         uses: wokwi/wokwi-ci-action@v1
         with:
           token: ${{ secrets.WOKWI_CLI_TOKEN }}
-          path: test/integ-tests
+          path: test/e2e-tests
           timeout: 30000
           expect_text: 'Device ready'
           serial_log_file: 'log-hello-world.txt'
 
       # - name: esp-idf test
       #   run: |
-      #     docker run -v .:/project -w /project/test/integ-tests -e HOME=/tmp -e WOKWI_CLI_TOKEN=${{ secrets.WOKWI_CLI_TOKEN }} lptr/pytest-embedded:latest pytest --embedded-services idf,wokwi ./pytest_integ-tests.py
+      #     docker run -v .:/project -w /project/test/e2e-tests -e HOME=/tmp -e WOKWI_CLI_TOKEN=${{ secrets.WOKWI_CLI_TOKEN }} lptr/pytest-embedded:latest pytest --embedded-services idf,wokwi ./pytest_e2e-tests.py
 
   pages:
     name: Publish OTA to GitHub Pages
@@ -280,9 +297,9 @@ jobs:
   release:
     needs:
       - build
-      # Temporarily disabled until Wokwi licensing is fixed
-      # - unit-test
-      # - integ-test
+      - unit-test
+      - embedded-test
+      - e2e-test
     if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
     steps:

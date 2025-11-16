@@ -30,6 +30,16 @@
       "MIMode": "gdb",
       "miDebuggerPath": "${command:espIdf.getToolchainGdb}",
       "miDebuggerServerAddress": "localhost:3333"
+    },
+    {
+      "name": "Wokwi GDB e2e-test",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/test/e2e-tests/build/ugly-duckling-e2e-tests.elf",
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "miDebuggerPath": "${command:espIdf.getToolchainGdb}",
+      "miDebuggerServerAddress": "localhost:3333"
     }
   ]
 }

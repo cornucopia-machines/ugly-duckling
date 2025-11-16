@@ -3,4 +3,5 @@ idf_component_register(
         src
     REQUIRES
         bblanchon__arduinojson
+        peripherals-api
 )

@@ -1,9 +1,12 @@
 idf_component_register(
-    SRCS
-        src/peripherals/Motors.cpp
+    SRC_DIRS
+        src
     INCLUDE_DIRS
         src
     REQUIRES
+        catch2
+
         kernel
-        peripherals-api
+
+    WHOLE_ARCHIVE
 )

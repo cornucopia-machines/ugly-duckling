@@ -39,17 +39,18 @@ private:
 
 CATCH_REGISTER_LISTENER(testRunListener)
 
-int main(int argc, char* argv[]) {
+extern "C" void app_main(void) {
+    const char* argv[] = {
+        "target_test_main",
+    };
+    int argc = sizeof(argv) / sizeof(argv[0]);
+
     Catch::Session session;
     session.configData().rngSeed = 12345;
-    
-    int result = session.run(argc, argv);
-    
+    auto result = session.run(argc, argv);
     if (result != 0) {
         printf("Test failed with result %d\n", result);
     } else {
         printf("Test passed.\n");
     }
-    
-    return result;
 }
