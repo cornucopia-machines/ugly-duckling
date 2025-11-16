@@ -1,0 +1,56 @@
+{
+    "configurations": [
+        {
+            "name": "Production Code",
+            "compileCommands": [
+                "${config:idf.buildPath}/compile_commands.json"
+            ],
+            "includePath": [
+                "${config:idf.espIdfPath}/components",
+                "${config:idf.espIdfPathWin}/components",
+                "${workspaceFolder}/components/**",
+                "${workspaceFolder}/managed_components/**"
+            ],
+            "browse": {
+                "path": [
+                    "${config:idf.espIdfPath}/components",
+                    "${config:idf.espIdfPathWin}/components",
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "cppStandard": "c++23"
+        },
+        {
+            "name": "Embedded Tests",
+            "compileCommands": [
+                "${workspaceFolder}/test/embedded-tests/build/compile_commands.json"
+            ],
+            "includePath": [
+                "${config:idf.espIdfPath}/components",
+                "${config:idf.espIdfPathWin}/components",
+                "${workspaceFolder}/components/**",
+                "${workspaceFolder}/managed_components/**",
+                "${workspaceFolder}/test/embedded-tests/components",
+                "${workspaceFolder}/test/embedded-tests/managed_components"
+            ],
+            "browse": {
+                "path": [
+                    "${config:idf.espIdfPath}/components",
+                    "${config:idf.espIdfPathWin}/components",
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
+        },
+        {
+            "name": "Native Unit Tests",
+            "compileCommands": [
+                "${workspaceFolder}/test/unit-tests/build-native/compile_commands.json"
+            ],
+            "cppStandard": "c++23",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}
