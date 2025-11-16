@@ -38,7 +38,7 @@ include_directories(
     ${COMPONENTS_DIR}/scheduling/src
     ${COMPONENTS_DIR}/scheduling/test
     ${COMPONENTS_DIR}/utils/src
-    ${COMPONENTS_DIR}/unit-test-support/src
+    ${COMPONENTS_DIR}/test-support/src
 )
 
 # Collect all test source files
