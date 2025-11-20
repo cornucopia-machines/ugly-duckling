@@ -1,6 +1,6 @@
 {
   "instance": "test-mk6-xxx",
-  "location": "bumblebee",
+  "location": "area-51",
   "peripherals": [
     {
       "name": "pressure",
