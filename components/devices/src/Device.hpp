@@ -533,6 +533,11 @@ static void startDevice() {
             auto device = json["settings"].to<JsonObject>();
             settings->store(device);
             json["version"] = farmhubVersion;
+#ifdef FARMHUB_DEBUG
+            json["debug"] = true;
+#else
+            json["debug"] = false;
+#endif
             json["reset"] = esp_reset_reason();
             json["wakeup"] = esp_sleep_get_wakeup_cause();
             json["bootCount"] = bootCount++;
