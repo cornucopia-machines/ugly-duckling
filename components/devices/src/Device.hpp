@@ -527,16 +527,17 @@ static void startDevice() {
     mqttRoot->publish(
         "init",
         [settings, initState, peripheralsInitJson, functionsInitJson, powerManager](JsonObject& json) {
-            // TODO Remove redundant mentions of "ugly-duckling"
-            json["type"] = "ugly-duckling";
             json["model"] = settings->model.get();
             json["instance"] = settings->instance.get();
             json["mac"] = getMacAddress();
             auto device = json["settings"].to<JsonObject>();
             settings->store(device);
-            // TODO Remove redundant mentions of "ugly-duckling"
-            json["app"] = "ugly-duckling";
             json["version"] = farmhubVersion;
+#ifdef FARMHUB_DEBUG
+            json["debug"] = true;
+#else
+            json["debug"] = false;
+#endif
             json["reset"] = esp_reset_reason();
             json["wakeup"] = esp_sleep_get_wakeup_cause();
             json["bootCount"] = bootCount++;
