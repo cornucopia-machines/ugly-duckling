@@ -107,7 +107,7 @@ public:
 
 protected:
     void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<Mk6Settings>& settings) override {
-        auto isRev1 = macAddressStartsWith(std::array<uint8_t, 4> { 0x34, 0x85, 0x18, 0x50 });
+        auto isRev1 = macAddressStartsWith(std::array<uint8_t, 4> { 0x34, 0x85, 0x18 });
         auto isRev2 = macAddressStartsWith(std::array<uint8_t, 4> { 0xec, 0xda, 0x3b, 0x5b });
 
         // LOADEN was introduced on Rev3, so we default to C2 on earlier revisions
