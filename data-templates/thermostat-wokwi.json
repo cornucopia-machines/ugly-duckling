@@ -1,0 +1,22 @@
+{
+  "instance": "test-wokwi",
+  "location": "area-51",
+  "functions": [
+    {
+      "name": "thermostat",
+      "type": "thermostat",
+      "params": {
+        "switch": "heater"
+      }
+    }
+  ],
+  "peripherals": [
+    {
+      "name": "heater",
+      "type": "valve",
+      "params": {
+        "pin": "B1"
+      }
+    }
+  ]
+}
