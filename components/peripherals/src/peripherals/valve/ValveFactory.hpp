@@ -35,8 +35,7 @@ inline PeripheralFactory makeFactory(
         "valve",
         "valve",
         [motors](PeripheralInitParameters& params, const std::shared_ptr<ValveSettings>& settings) {
-            auto motor = findMotor(motors, settings->motor.get());
-            auto strategy = settings->createValveControlStrategy(motor);
+            auto strategy = settings->createValveControlStrategy(motors, settings->motor.get());
             auto valve = std::make_shared<Valve>(
                 params.name,
                 std::move(strategy));
