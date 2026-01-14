@@ -1,6 +1,6 @@
 # Ugly Duckling
 
-![Build badge](https://github.com/kivancsikert/ugly-duckling/actions/workflows/build.yml/badge.svg)
+![Build badge](https://github.com/cornucopia-machines/ugly-duckling/actions/workflows/build.yml/badge.svg)
 
 Ugly Duckling is a firmware for IoT devices participating in the FarmHub ecosystem.
 
