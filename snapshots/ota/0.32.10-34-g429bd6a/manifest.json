@@ -1,0 +1,69 @@
+{
+  "commit": "429bd6a584ed55f6cdd17fd9384fc540f23deccb",
+  "version": "0.32.10-34-g429bd6a",
+  "id": "0.32.10-34-g429bd6a",
+  "date": "2026-01-14T12:39:10Z",
+  "files": [
+    {
+      "name": "ugly-duckling-mk5-release.bin",
+      "url": "https://cornucopia-machines.github.io/ugly-duckling/snapshots/ota/0.32.10-34-g429bd6a/ugly-duckling-mk5-release.bin",
+      "sha256": "29109d81f9fbc28bf3107b8fd248ce6ebc953c4d24acb669fe6e038e65268f66"
+    },
+    {
+      "name": "ugly-duckling-mk6-debug.bin",
+      "url": "https://cornucopia-machines.github.io/ugly-duckling/snapshots/ota/0.32.10-34-g429bd6a/ugly-duckling-mk6-debug.bin",
+      "sha256": "b4684242eec740a3d03375b4a4d181035a6da2ef994428b4c49dab6bf3a9bc17"
+    },
+    {
+      "name": "ugly-duckling-mk6-release.bin",
+      "url": "https://cornucopia-machines.github.io/ugly-duckling/snapshots/ota/0.32.10-34-g429bd6a/ugly-duckling-mk6-release.bin",
+      "sha256": "1bb5c8d1f0af08a575d14a08aeba666b8b42fd28101861c0e65e4282a6dafaa8"
+    },
+    {
+      "name": "ugly-duckling-mk7-release.bin",
+      "url": "https://cornucopia-machines.github.io/ugly-duckling/snapshots/ota/0.32.10-34-g429bd6a/ugly-duckling-mk7-release.bin",
+      "sha256": "19e587e7ee5cda7416ba33f4c76b4be58d01e4d4f464f7817866d3ab728e99f7"
+    },
+    {
+      "name": "ugly-duckling-mk8-release.bin",
+      "url": "https://cornucopia-machines.github.io/ugly-duckling/snapshots/ota/0.32.10-34-g429bd6a/ugly-duckling-mk8-release.bin",
+      "sha256": "79ec5bf4e24d6d5f4cb769a25827281a9693a0777d8a105c90fe4d9886fab342"
+    },
+    {
+      "name": "ugly-duckling-mkX-release.bin",
+      "url": "https://cornucopia-machines.github.io/ugly-duckling/snapshots/ota/0.32.10-34-g429bd6a/ugly-duckling-mkX-release.bin",
+      "sha256": "6d2c93d0a22210109eb41d567c57c2e982706358e1acabcfff3af007de6f3e90"
+    },
+    {
+      "name": "ugly-duckling-mk5-release.elf",
+      "url": "https://cornucopia-machines.github.io/ugly-duckling/snapshots/ota/0.32.10-34-g429bd6a/ugly-duckling-mk5-release.elf",
+      "sha256": "f032d9c4141320ac15ea61067153dadfd5fb34e6703a78759ce9db93c0528c7c"
+    },
+    {
+      "name": "ugly-duckling-mk6-debug.elf",
+      "url": "https://cornucopia-machines.github.io/ugly-duckling/snapshots/ota/0.32.10-34-g429bd6a/ugly-duckling-mk6-debug.elf",
+      "sha256": "f1eaaf54b48617f6e1fedb8b54af28da6143ab476e27d9872ab1fef42e1948b7"
+    },
+    {
+      "name": "ugly-duckling-mk6-release.elf",
+      "url": "https://cornucopia-machines.github.io/ugly-duckling/snapshots/ota/0.32.10-34-g429bd6a/ugly-duckling-mk6-release.elf",
+      "sha256": "e5dac71b4b725fc1020e7321408b580d36805e125874f88752a8c184edbe2762"
+    },
+    {
+      "name": "ugly-duckling-mk7-release.elf",
+      "url": "https://cornucopia-machines.github.io/ugly-duckling/snapshots/ota/0.32.10-34-g429bd6a/ugly-duckling-mk7-release.elf",
+      "sha256": "ea6a80ea23795119e6f0c50bfb3e057c98f225f5c5ee904b847c01446b247fa0"
+    },
+    {
+      "name": "ugly-duckling-mk8-release.elf",
+      "url": "https://cornucopia-machines.github.io/ugly-duckling/snapshots/ota/0.32.10-34-g429bd6a/ugly-duckling-mk8-release.elf",
+      "sha256": "e6920964787c4c23143d169f503d80b66a6878fb3aae96983f4b57ef964fb82e"
+    },
+    {
+      "name": "ugly-duckling-mkX-release.elf",
+      "url": "https://cornucopia-machines.github.io/ugly-duckling/snapshots/ota/0.32.10-34-g429bd6a/ugly-duckling-mkX-release.elf",
+      "sha256": "512f0e5fe52301edf58416209ffa52bc84e2637dc75b3b65dccfc8d9c6bd5e3f"
+    }
+  ],
+  "branch": "main"
+}
