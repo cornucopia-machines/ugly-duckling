@@ -18,6 +18,7 @@
 
 #include <functions/chicken_door/ChickenDoor.hpp>
 #include <functions/plot_controller/PlotController.hpp>
+#include <functions/thermostat/Thermostat.hpp>
 #include <peripherals/Peripheral.hpp>
 #include <peripherals/analog_meter/AnalogMeter.hpp>
 #include <peripherals/environment/Ds18B20SoilSensor.hpp>
@@ -89,6 +90,7 @@ public:
     void registerFunctionFactories(const std::shared_ptr<FunctionManager>& functionManager) {
         functionManager->registerFactory(plot_controller::makeFactory());
         functionManager->registerFactory(chicken_door::makeFactory());
+        functionManager->registerFactory(thermostat::makeFactory());
     }
 
     /**

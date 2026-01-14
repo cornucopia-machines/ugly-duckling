@@ -1,0 +1,129 @@
+{
+  "version": 1,
+  "author": "Lóránt Pintér",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-s3-devkitc-1", "id": "esp", "top": -0.18, "left": 4.57, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "statusLed",
+      "top": -32.4,
+      "left": 186.2,
+      "attrs": { "color": "white", "label": "Status" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 32.75,
+      "left": 163.2,
+      "attrs": { "value": "22" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "statusLed2",
+      "top": -32.4,
+      "left": 253.4,
+      "attrs": { "color": "white", "label": "Status-2" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r7",
+      "top": 32.75,
+      "left": 230.4,
+      "attrs": { "value": "22" }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "battery",
+      "top": -106.9,
+      "left": 9.4,
+      "attrs": { "value": "1000" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": 246.2,
+      "left": 134.4,
+      "attrs": { "color": "green", "label": "Flash", "bounce": "0" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text5",
+      "top": -134.4,
+      "left": 9.6,
+      "attrs": { "text": "Battery" }
+    },
+    { "type": "wokwi-gnd", "id": "gnd4", "top": -19.2, "left": -19.8, "attrs": {} },
+    { "type": "wokwi-vcc", "id": "vcc1", "top": -20.16, "left": 86.6, "rotate": 180, "attrs": {} },
+    { "type": "wokwi-relay-module", "id": "relay1", "top": 105.8, "left": 307.2, "attrs": {} },
+    { "type": "wokwi-vcc", "id": "vcc2", "top": 87.16, "left": 278.4, "attrs": {} },
+    { "type": "wokwi-gnd", "id": "gnd1", "top": 153.6, "left": 277.8, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "closedLed",
+      "top": 89.8,
+      "left": 568,
+      "rotate": 90,
+      "attrs": { "color": "red", "label": "Closed" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 119.15,
+      "left": 508.8,
+      "attrs": { "value": "22" }
+    },
+    { "type": "wokwi-gnd", "id": "gnd2", "top": 68.6, "left": 547, "rotate": 180, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "openLed",
+      "top": 119,
+      "left": 568,
+      "rotate": 90,
+      "attrs": { "color": "limegreen", "label": "Open", "flip": "1" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r3",
+      "top": 138.35,
+      "left": 508.8,
+      "attrs": { "value": "22" }
+    },
+    { "type": "wokwi-gnd", "id": "gnd3", "top": 163.2, "left": 546.6, "attrs": {} },
+    { "type": "wokwi-vcc", "id": "vcc3", "top": 87.16, "left": 451.2, "attrs": {} }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "statusLed:C", "esp:2", "black", [] ],
+    [ "statusLed:A", "r1:2", "green", [] ],
+    [ "r1:1", "esp:3V3.2", "green", [ "v0" ] ],
+    [ "battery:SIG", "esp:1", "green", [ "v0" ] ],
+    [ "statusLed2:A", "r7:2", "green", [] ],
+    [ "r7:1", "esp:3V3.2", "green", [ "v0" ] ],
+    [ "statusLed2:C", "esp:4", "green", [ "v0" ] ],
+    [ "esp:GND.4", "btn1:2.l", "black", [ "h19.2", "v47.8" ] ],
+    [ "esp:0", "btn1:1.l", "green", [ "h28.8", "v105.6" ] ],
+    [ "btn2:2.r", "esp:5", "green", [ "h9.8", "v19.4" ] ],
+    [ "gnd4:GND", "battery:GND", "black", [ "v-9.6", "h76.8" ] ],
+    [ "vcc1:VCC", "battery:VCC", "red", [ "v-9.6", "h-57.6" ] ],
+    [ "vcc2:VCC", "relay1:VCC", "red", [ "v0" ] ],
+    [ "gnd1:GND", "relay1:GND", "black", [ "v0" ] ],
+    [ "statusLed1:A", "r2:2", "green", [] ],
+    [ "r2:1", "relay1:NC", "green", [ "v0" ] ],
+    [ "gnd2:GND", "statusLed1:C", "black", [ "v0" ] ],
+    [ "statusLed3:A", "r3:2", "green", [ "h0" ] ],
+    [ "r3:1", "relay1:NO", "green", [ "v0" ] ],
+    [ "gnd3:GND", "statusLed3:C", "black", [ "v0" ] ],
+    [ "vcc3:VCC", "relay1:COM", "red", [ "v0" ] ],
+    [ "gnd2:GND", "closedLed:C", "black", [ "v9.6", "h19.2" ] ],
+    [ "gnd3:GND", "openLed:C", "black", [ "v0" ] ],
+    [ "closedLed:A", "r2:2", "green", [ "h0" ] ],
+    [ "openLed:A", "r3:2", "green", [ "h0" ] ],
+    [ "relay1:IN", "esp:5", "green", [ "h-163.2", "v-48.2" ] ]
+  ],
+  "dependencies": {
+    "chip-pwm": "github:Dlloydev/Wokwi-Chip-PWM@1.0.6",
+    "chip-scope": "github:Dlloydev/Wokwi-Chip-scope@1.0.7"
+  }
+}
