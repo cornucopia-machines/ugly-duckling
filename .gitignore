@@ -4,9 +4,9 @@
 
 *.log
 
-# File system image
-/data/
-/data-unused/
+# File system image for configuration data
+/config/
+/config-unused/
 
 # ESP-IDF generated files
 build/
