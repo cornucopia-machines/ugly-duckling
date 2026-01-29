@@ -51,7 +51,7 @@ if(UD_DEBUG)
     component_compile_definitions(DUMP_MQTT)
 endif()
 
-# Use `idf.py -DFSUPLOAD=1 flash` to upload the data partition
+# Use `idf.py -DFSUPLOAD=1 flash` to upload the config partition
 if(DEFINED FSUPLOAD AND FSUPLOAD)
-    spiffs_create_partition_image(data ${CMAKE_SOURCE_DIR}/config FLASH_IN_PROJECT)
+    spiffs_create_partition_image(config ${CMAKE_SOURCE_DIR}/config FLASH_IN_PROJECT)
 endif()

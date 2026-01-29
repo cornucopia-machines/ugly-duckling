@@ -180,7 +180,7 @@ idf.py -DFSUPLOAD=1 flash
 To upload only the SPIFFS image:
 
 ```bash
-mkspiffs -c config -s 0x30000 build/config.bin; esptool write_flash 0x3D0000 build/config.bin
+mkspiffs -c config -s 0x40000 build/config.bin; esptool write_flash 0x610000 build/config.bin
 ```
 
 ### Monitoring
