@@ -238,16 +238,11 @@ jobs:
       #   run: |
       #     docker run -v .:/project -w /project/test/e2e-tests -e HOME=/tmp -e WOKWI_CLI_TOKEN=${{ secrets.WOKWI_CLI_TOKEN }} lptr/pytest-embedded:latest pytest --embedded-services idf,wokwi ./pytest_e2e-tests.py
 
-  pages:
-    name: Publish OTA to GitHub Pages
+  r2-publish:
+    name: Publish OTA to Cloudflare R2
     needs:
       - build
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    env:
-      RETENTION_DAYS: 30
-      TARGET_DIR: snapshots
 
     steps:
       - name: Checkout source
@@ -260,41 +255,25 @@ jobs:
         with:
           path: work/artifacts
 
-      - name: Checkout gh-pages
-        uses: actions/checkout@v5
-        with:
-          ref: gh-pages
-          path: work/site
-          fetch-depth: 0
-
-      - name: Adjust env for release runs
-        if: github.event_name == 'release' && github.event.action == 'published'
-        run: |
-          echo "RETENTION_DAYS=0" >> $GITHUB_ENV
-          echo "TARGET_DIR=releases" >> $GITHUB_ENV
+      - name: Install dependencies
+        working-directory: .github/publish-ota-r2
+        run: npm ci
 
       - name: Run publisher
+        working-directory: .github/publish-ota-r2
         run: |
-          python3 .github/publish-ota.py \
-            --artifacts work/artifacts \
-            --site work/site/${{ env.TARGET_DIR }} \
-            --base-url "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ env.TARGET_DIR }}" \
-            --retention-days "${{ env.RETENTION_DAYS }}" \
-            --repo-root . \
+          npx tsx publish-ota-r2.ts \
+            --artifacts ../../work/artifacts \
+            --repo-root ../.. \
+            --base-url "${{ vars.R2_PUBLIC_URL }}" \
             --branch "${{ github.ref_name }}" \
-            --commit-sha "${{ github.sha }}"
-        shell: bash
-
-      - name: Publish to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: work/site
-          user_name: github-actions[bot]
-          user_email: github-actions[bot]@users.noreply.github.com
-          commit_message: |
-            OTA Pages: ${{ github.sha }} (retention: ${{ env.RETENTION_DAYS }} days)
+            --commit-sha "${{ github.sha }}" \
+            --max-builds 10
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ vars.R2_BUCKET_NAME }}
 
   release:
     needs:
