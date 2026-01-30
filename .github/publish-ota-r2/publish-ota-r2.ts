@@ -3,7 +3,7 @@
  * Publish OTA binaries to Cloudflare R2, prune old builds, and manage manifests.
  *
  * - Uploads *.bin and *.elf from an artifacts directory to R2: <channel>/<version>/...
- * - <version> comes from `git describe --tags --always --dirty`.
+ * - <version> comes from `git describe --tags --always`.
  * - Writes per-build manifest.json (with sha256), updates latest.json, and manages all-manifests.json.
  * - Prunes old builds keeping only the most recent N builds per channel.
  *
@@ -68,7 +68,7 @@ function gitRevParse(repoRoot: string, ref = "HEAD"): string {
 
 function gitDescribe(repoRoot: string, commitSha: string): string {
   return run(
-    `git -C "${repoRoot}" describe --tags --always --abbrev=7 ${commitSha}`,
+    `git -C "${repoRoot}" describe --tags --always ${commitSha}`,
   );
 }
 
