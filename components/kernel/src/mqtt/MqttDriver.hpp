@@ -156,6 +156,7 @@ public:
                 .timeout_ms = duration_cast<milliseconds>(MQTT_NETWORK_TIMEOUT).count(),
                 .refresh_connection_after_ms = 0,    // No need to refresh connection
                 .disable_auto_reconnect = false,
+                .tcp_keep_alive_cfg = {},
                 .transport = nullptr,    // Use default transport
                 .if_name = nullptr,      // Use default interface
             },
