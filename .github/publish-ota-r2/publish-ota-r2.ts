@@ -2,8 +2,8 @@
 /**
  * Publish OTA binaries to Cloudflare R2, prune old builds, and manage manifests.
  *
- * - Uploads *.bin and *.elf from an artifacts directory to R2: <channel>/<build-id>/...
- * - <build-id> comes from `git describe --tags --always --dirty` (slugified).
+ * - Uploads *.bin and *.elf from an artifacts directory to R2: <channel>/<version>/...
+ * - <version> comes from `git describe --tags --always --dirty`.
  * - Writes per-build manifest.json (with sha256), updates latest.json, and manages all-manifests.json.
  * - Prunes old builds keeping only the most recent N builds per channel.
  *
@@ -33,7 +33,6 @@ interface FileEntry {
 interface BuildManifest {
   commit: string;
   version: string;
-  id: string;
   date: string;
   files: FileEntry[];
   branch?: string;
@@ -45,7 +44,7 @@ interface Config {
   baseUrl: string;
   branch?: string;
   commitSha?: string;
-  buildId?: string;
+  versionOverride?: string;
   maxBuildsPerChannel: number;
   r2AccountId: string;
   r2AccessKeyId: string;
@@ -70,15 +69,6 @@ function gitRevParse(repoRoot: string, ref = "HEAD"): string {
 function gitDescribe(repoRoot: string, commitSha: string): string {
   return run(
     `git -C "${repoRoot}" describe --tags --always --abbrev=7 ${commitSha}`,
-  );
-}
-
-function slugify(s: string): string {
-  return (
-    s
-      .replace(/[^A-Za-z0-9._-]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .replace(/\.\.+/g, "-") || "untagged"
   );
 }
 
@@ -253,10 +243,10 @@ async function uploadBuildManifest(
   client: S3Client,
   bucket: string,
   channel: string,
-  buildId: string,
+  version: string,
   manifest: BuildManifest,
 ): Promise<void> {
-  const key = `${channel}/${buildId}/manifest.json`;
+  const key = `${channel}/${version}/manifest.json`;
   const content = JSON.stringify(manifest, null, 2) + "\n";
   await r2Put(client, bucket, key, content, "application/json");
   console.log(`Uploaded ${key}`);
@@ -266,11 +256,11 @@ async function uploadArtifact(
   client: S3Client,
   bucket: string,
   channel: string,
-  buildId: string,
+  version: string,
   filePath: string,
 ): Promise<void> {
   const fileName = basename(filePath);
-  const key = `${channel}/${buildId}/${fileName}`;
+  const key = `${channel}/${version}/${fileName}`;
   const content = readFileSync(filePath);
 
   const contentType = fileName.endsWith(".bin")
@@ -283,13 +273,13 @@ async function uploadArtifact(
   console.log(`Uploaded ${key}`);
 }
 
-async function deleteBuildFromR2(
+async function deleteVersionFromR2(
   client: S3Client,
   bucket: string,
   channel: string,
-  buildId: string,
+  version: string,
 ): Promise<void> {
-  const prefix = `${channel}/${buildId}/`;
+  const prefix = `${channel}/${version}/`;
   const keys = await r2ListPrefix(client, bucket, prefix);
 
   for (const key of keys) {
@@ -318,8 +308,8 @@ async function pruneOldBuilds(
   const remove = sorted.slice(maxBuilds);
 
   for (const manifest of remove) {
-    console.log(`Pruning old build: ${manifest.id}`);
-    await deleteBuildFromR2(client, bucket, channel, manifest.id);
+    console.log(`Pruning old version: ${manifest.version}`);
+    await deleteVersionFromR2(client, bucket, channel, manifest.version);
   }
 
   return keep;
@@ -335,7 +325,7 @@ async function main() {
     )
     .option("--branch <name>", "Branch the artifact was published from")
     .option("--commit-sha <sha>", "Commit SHA to describe (default: HEAD)")
-    .option("--build-id <id>", "Override build folder id")
+    .option("--version-override <version>", "Override version string")
     .option(
       "--max-builds <n>",
       "Maximum builds to keep per channel",
@@ -371,7 +361,7 @@ async function main() {
     baseUrl: opts.baseUrl.replace(/\/$/, ""),
     branch: opts.branch,
     commitSha: opts.commitSha,
-    buildId: opts.buildId,
+    versionOverride: opts.versionOverride,
     maxBuildsPerChannel: opts.maxBuilds,
     r2AccountId: opts.r2AccountId,
     r2AccessKeyId: opts.r2AccessKeyId,
@@ -402,13 +392,13 @@ async function main() {
   const commitSha = config.commitSha || gitRevParse(config.repoRoot);
   console.log(`Commit SHA: ${commitSha}`);
 
-  // Resolve describe & build id
-  const rawDescribe = config.buildId || gitDescribe(config.repoRoot, commitSha);
-  const buildId = slugify(rawDescribe);
-  console.log(`Build ID: ${buildId} (version: ${rawDescribe})`);
+  // Resolve version
+  const version =
+    config.versionOverride || gitDescribe(config.repoRoot, commitSha);
+  console.log(`Version: ${version}`);
 
   // Determine channel
-  const channel = getChannel(rawDescribe);
+  const channel = getChannel(version);
   console.log(`Channel: ${channel}`);
 
   // Find artifacts
@@ -435,12 +425,12 @@ async function main() {
   );
   console.log(`Existing builds in ${channel}: ${allManifests.length}`);
 
-  // Check if this build already exists
-  const existingIndex = allManifests.findIndex((m) => m.id === buildId);
+  // Check if this version already exists
+  const existingIndex = allManifests.findIndex((m) => m.version === version);
   if (existingIndex !== -1) {
-    console.log(`Build ${buildId} already exists, removing old entry`);
+    console.log(`Version ${version} already exists, removing old entry`);
     // Delete old files from R2
-    await deleteBuildFromR2(client, config.r2BucketName, channel, buildId);
+    await deleteVersionFromR2(client, config.r2BucketName, channel, version);
     allManifests.splice(existingIndex, 1);
   }
 
@@ -449,13 +439,13 @@ async function main() {
   for (const filePath of artifactFiles.sort()) {
     const fileName = basename(filePath);
     const sha256 = sha256File(filePath);
-    const url = `${config.baseUrl}/${channel}/${buildId}/${fileName}`;
+    const url = `${config.baseUrl}/${channel}/${version}/${fileName}`;
 
     await uploadArtifact(
       client,
       config.r2BucketName,
       channel,
-      buildId,
+      version,
       filePath,
     );
 
@@ -465,8 +455,7 @@ async function main() {
   // Create build manifest
   const buildManifest: BuildManifest = {
     commit: commitSha,
-    version: rawDescribe,
-    id: buildId,
+    version,
     date: nowUtcIso(),
     files,
   };
@@ -479,7 +468,7 @@ async function main() {
     client,
     config.r2BucketName,
     channel,
-    buildId,
+    version,
     buildManifest,
   );
 
