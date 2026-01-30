@@ -101,6 +101,8 @@ static void dumpPerTaskHeapInfo() {
 }
 #endif
 
+static constexpr const char* CONFIG_PARTITION = "config";
+
 static void performFactoryReset(const std::shared_ptr<LedDriver>& statusLed, bool completeReset) {
     LOGI("Performing factory reset");
 
@@ -117,7 +119,7 @@ static void performFactoryReset(const std::shared_ptr<LedDriver>& statusLed, boo
         statusLed->turnOn();
 
         LOGI(" - Deleting the file system...");
-        FileSystem::format();
+        FileSystem::format(CONFIG_PARTITION);
     }
 
     LOGI(" - Clearing NVS...");
@@ -346,9 +348,9 @@ static void startDevice() {
 
     auto deviceDefinition = std::make_shared<TDeviceDefinition>();
 
-    auto fs = std::make_shared<FileSystem>();
+    auto configFs = std::make_shared<FileSystem>(CONFIG_PARTITION);
 
-    auto settings = loadConfig<TDeviceSettings>(fs, "/device-config.json");
+    auto settings = loadConfig<TDeviceSettings>(configFs, "/device-config.json");
 
     auto watchdog = initWatchdog(settings->watchdogTimeout.get());
 
@@ -434,15 +436,15 @@ static void startDevice() {
     auto rtc = std::make_shared<RtcDriver>(wifi->getNetworkReady(), mdns, settings->ntp.get(), states->rtcInSync);
 
     // Init MQTT connection
-    auto mqttConfig = loadConfig<MqttDriver::Config>(fs, "/mqtt-config.json");
+    auto mqttConfig = loadConfig<MqttDriver::Config>(configFs, "/mqtt-config.json");
     auto mqttRoot = initMqtt(states, mdns, mqttConfig, settings->instance.get(), settings->location.get());
     MqttLog::init(settings->publishLogs.get(), logRecords, mqttRoot);
     registerBasicCommands(mqttRoot);
-    registerFileCommands(mqttRoot, fs);
+    registerFileCommands(mqttRoot, configFs);
 
     // Handle any pending HTTP update (will reboot if update was required and was successful)
-    registerHttpUpdateCommand(mqttRoot, fs);
-    HttpUpdater::performPendingHttpUpdateIfNecessary(fs, wifi, watchdog);
+    registerHttpUpdateCommand(mqttRoot, configFs);
+    HttpUpdater::performPendingHttpUpdateIfNecessary(configFs, wifi, watchdog);
 
     auto pcnt = std::make_shared<PcntManager>();
     auto pulseCounterManager = std::make_shared<PulseCounterManager>();
@@ -469,7 +471,7 @@ static void startDevice() {
         .telemetryPublisher = telemetryPublisher,
         .peripherals = peripheralManager,
     };
-    auto functionManager = std::make_shared<FunctionManager>(fs, functionServices, mqttRoot);
+    auto functionManager = std::make_shared<FunctionManager>(configFs, functionServices, mqttRoot);
     shutdownManager->registerShutdownListener([functionManager]() {
         functionManager->shutdown();
     });
