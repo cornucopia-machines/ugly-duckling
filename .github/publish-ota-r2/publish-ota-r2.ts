@@ -24,6 +24,8 @@ import {
 } from "@aws-sdk/client-s3";
 
 // Types
+type Channel = "snapshots" | "releases";
+
 interface FileEntry {
   name: string;
   url: string;
@@ -102,14 +104,13 @@ function nowUtcIso(): string {
   return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
-function isRelease(version: string): boolean {
-  // A release version matches a clean tag like "0.32.10" without any suffix
-  // Non-releases have suffixes like "-42-ga728583"
-  return /^\d+\.\d+\.\d+$/.test(version);
+function isSnapshot(version: string): boolean {
+  // A snapshot version ends with a commit hash like "-ga728583"
+  return /-g[0-9a-f]+$/.test(version);
 }
 
-function getChannel(version: string): "releases" | "snapshots" {
-  return isRelease(version) ? "releases" : "snapshots";
+function getChannel(version: string): Channel {
+  return isSnapshot(version) ? "snapshots" : "releases";
 }
 
 // R2 Client
