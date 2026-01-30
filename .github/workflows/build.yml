@@ -53,8 +53,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          fetch-depth: 0
-          submodules: "recursive"
+          fetch-tags: true
 
       - name: Restore ccache cache
         uses: actions/cache@v4
@@ -253,7 +252,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0
+          fetch-tags: true
 
       - name: Download workflow artifacts
         uses: actions/download-artifact@v5
@@ -265,7 +264,7 @@ jobs:
         with:
           ref: gh-pages
           path: work/site
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Adjust env for release runs
         if: github.event_name == 'release' && github.event.action == 'published'
