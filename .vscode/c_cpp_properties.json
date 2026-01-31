@@ -1,7 +1,8 @@
 {
+  "version": 4,
   "configurations": [
     {
-      "name": "Production Code",
+      "name": "Production",
       "compileCommands": [
         "${config:idf.buildPath}/compile_commands.json"
       ],
@@ -19,8 +20,7 @@
         ],
         "limitSymbolsToIncludedHeaders": true
       },
-      "cppStandard": "c++23",
-      "compilerPath": "${config:idf.toolsPathWin}\\tools\\xtensa-esp-elf\\esp-14.2.0_20251107\\xtensa-esp-elf\\bin\\xtensa-esp32s3-elf-gcc.exe"
+      "cppStandard": "c++23"
     },
     {
       "name": "Embedded Tests",
@@ -42,16 +42,15 @@
           "${workspaceFolder}"
         ],
         "limitSymbolsToIncludedHeaders": true
-      }
+      },
+      "cppStandard": "c++23"
     },
     {
       "name": "Native Unit Tests",
       "compileCommands": [
         "${workspaceFolder}/test/unit-tests/build-native/compile_commands.json"
       ],
-      "cppStandard": "c++23",
-      "intelliSenseMode": "gcc-x64"
+      "cppStandard": "c++23"
     }
-  ],
-  "version": 4
+  ]
 }

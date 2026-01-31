@@ -1,0 +1,19 @@
+{
+  "name": "publish-ota-r2",
+  "version": "1.0.0",
+  "description": "Publish OTA binaries to Cloudflare R2",
+  "type": "module",
+  "main": "publish-ota-r2.ts",
+  "scripts": {
+    "publish": "npx tsx publish-ota-r2.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.980.0",
+    "commander": "^14.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.1.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
