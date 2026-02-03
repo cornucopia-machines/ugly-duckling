@@ -90,6 +90,9 @@ jobs:
         run: |
           cp build/ugly-duckling.bin ugly-duckling-${{ matrix.environment }}.bin
           cp build/ugly-duckling.elf ugly-duckling-${{ matrix.environment }}.elf
+          cp build/bootloader/bootloader.bin ugly-duckling-${{ matrix.environment }}-bootloader.bin
+          cp build/bootloader/bootloader.elf ugly-duckling-${{ matrix.environment }}-bootloader.elf
+          cp build/partition_table/partition-table.bin ugly-duckling-${{ matrix.environment }}-partition_table.bin
 
       - name: Create debug artifact
         run: |
@@ -98,6 +101,9 @@ jobs:
             build/*.bin \
             build/*.elf \
             build/*.map \
+            build/bootloader/*.bin \
+            build/bootloader/*.elf \
+            build/partition_table/*.bin \
             build/config/sdkconfig.h
 
       - name: Upload artifacts
@@ -107,6 +113,9 @@ jobs:
           path: |
             ugly-duckling-${{ matrix.environment }}.bin
             ugly-duckling-${{ matrix.environment }}.elf
+            ugly-duckling-${{ matrix.environment }}-bootloader.bin
+            ugly-duckling-${{ matrix.environment }}-bootloader.elf
+            ugly-duckling-${{ matrix.environment }}-partition_table.bin
             debug-${{ matrix.environment }}.zip
           if-no-files-found: error
 
