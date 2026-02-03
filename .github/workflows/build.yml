@@ -94,7 +94,9 @@ jobs:
           cp build/bootloader/bootloader.bin work/artifact/bootloader-${{ matrix.environment }}.bin
           cp build/bootloader/bootloader.elf work/artifact/bootloader-${{ matrix.environment }}.elf
           cp build/partition_table/partition-table.bin work/artifact/partition-table-${{ matrix.environment }}.bin
+          cp partitions.csv work/artifact/partitions-${{ matrix.environment }}.csv
           cp build/flasher_args.json work/artifact/flasher_args-${{ matrix.environment }}.json
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:

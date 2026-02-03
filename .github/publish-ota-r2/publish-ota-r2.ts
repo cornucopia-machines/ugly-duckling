@@ -253,6 +253,7 @@ async function uploadBuildManifest(
 
 const contentTypesByExtension: Record<string, string> = {
   ".bin": "application/octet-stream",
+  ".csv": "text/csv",
   ".elf": "application/x-elf",
   ".json": "application/json",
 };
@@ -406,6 +407,7 @@ async function main() {
   // Find artifacts
   const artifactFiles = findFilesByExtensions(config.artifactsDir, [
     ".bin",
+    ".csv",
     ".elf",
     ".json",
   ]);
