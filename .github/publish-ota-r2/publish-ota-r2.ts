@@ -69,9 +69,7 @@ function gitRevParse(repoRoot: string, ref = "HEAD"): string {
 }
 
 function gitDescribe(repoRoot: string, commitSha: string): string {
-  return run(
-    `git -C "${repoRoot}" describe --tags --always ${commitSha}`,
-  );
+  return run(`git -C "${repoRoot}" describe --tags --always ${commitSha}`);
 }
 
 function sha256File(filePath: string): string {
@@ -253,6 +251,12 @@ async function uploadBuildManifest(
   console.log(`Uploaded ${key}`);
 }
 
+const contentTypesByExtension: Record<string, string> = {
+  ".bin": "application/octet-stream",
+  ".elf": "application/x-elf",
+  ".json": "application/json",
+};
+
 async function uploadArtifact(
   client: S3Client,
   bucket: string,
@@ -264,11 +268,8 @@ async function uploadArtifact(
   const key = `${channel}/${version}/${fileName}`;
   const content = readFileSync(filePath);
 
-  const contentType = fileName.endsWith(".bin")
-    ? "application/octet-stream"
-    : fileName.endsWith(".elf")
-      ? "application/x-elf"
-      : "application/octet-stream";
+  const ext = fileName.slice(fileName.lastIndexOf("."));
+  const contentType = contentTypesByExtension[ext] ?? "application/octet-stream";
 
   await r2Put(client, bucket, key, content, contentType);
   console.log(`Uploaded ${key}`);
@@ -406,6 +407,7 @@ async function main() {
   const artifactFiles = findFilesByExtensions(config.artifactsDir, [
     ".bin",
     ".elf",
+    ".json",
   ]);
   if (artifactFiles.length === 0) {
     console.error(

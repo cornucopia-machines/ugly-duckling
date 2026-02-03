@@ -88,35 +88,18 @@ jobs:
 
       - name: Rename firmware artifact
         run: |
-          cp build/ugly-duckling.bin ugly-duckling-${{ matrix.environment }}.bin
-          cp build/ugly-duckling.elf ugly-duckling-${{ matrix.environment }}.elf
-          cp build/bootloader/bootloader.bin ugly-duckling-${{ matrix.environment }}-bootloader.bin
-          cp build/bootloader/bootloader.elf ugly-duckling-${{ matrix.environment }}-bootloader.elf
-          cp build/partition_table/partition-table.bin ugly-duckling-${{ matrix.environment }}-partition_table.bin
-
-      - name: Create debug artifact
-        run: |
-          zip debug-${{ matrix.environment }}.zip \
-            build/project_description.json \
-            build/*.bin \
-            build/*.elf \
-            build/*.map \
-            build/bootloader/*.bin \
-            build/bootloader/*.elf \
-            build/partition_table/*.bin \
-            build/config/sdkconfig.h
-
+          mkdir -p work/artifact
+          cp build/ugly-duckling.bin work/artifact/ugly-duckling-${{ matrix.environment }}.bin
+          cp build/ugly-duckling.elf work/artifact/ugly-duckling-${{ matrix.environment }}.elf
+          cp build/bootloader/bootloader.bin work/artifact/bootloader-${{ matrix.environment }}.bin
+          cp build/bootloader/bootloader.elf work/artifact/bootloader-${{ matrix.environment }}.elf
+          cp build/partition_table/partition-table.bin work/artifact/partition-table-${{ matrix.environment }}.bin
+          cp build/flasher_args.json work/artifact/flasher_args-${{ matrix.environment }}.json
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ugly-duckling-${{ matrix.environment }}
-          path: |
-            ugly-duckling-${{ matrix.environment }}.bin
-            ugly-duckling-${{ matrix.environment }}.elf
-            ugly-duckling-${{ matrix.environment }}-bootloader.bin
-            ugly-duckling-${{ matrix.environment }}-bootloader.elf
-            ugly-duckling-${{ matrix.environment }}-partition_table.bin
-            debug-${{ matrix.environment }}.zip
+          path: work/artifact/
           if-no-files-found: error
 
   unit-test:
