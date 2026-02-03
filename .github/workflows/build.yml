@@ -86,28 +86,22 @@ jobs:
             ./generate-clang-tidy-compile-db.py && \
             clang-tidy -p build/clang-tidy $(find main components -type f -name '*.cpp' -not -path '*/test/*' -not -path '*/build/*')
 
-      - name: Rename firmware artifact
+      - name: Collect artifacts
         run: |
-          cp build/ugly-duckling.bin ugly-duckling-${{ matrix.environment }}.bin
-          cp build/ugly-duckling.elf ugly-duckling-${{ matrix.environment }}.elf
-
-      - name: Create debug artifact
-        run: |
-          zip debug-${{ matrix.environment }}.zip \
-            build/project_description.json \
-            build/*.bin \
-            build/*.elf \
-            build/*.map \
-            build/config/sdkconfig.h
+          mkdir -p work/artifacts
+          cp build/ugly-duckling.bin work/artifacts/ugly-duckling-${{ matrix.environment }}.bin
+          cp build/ugly-duckling.elf work/artifacts/ugly-duckling-${{ matrix.environment }}.elf
+          cp build/bootloader/bootloader.bin work/artifacts/bootloader-${{ matrix.environment }}.bin
+          cp build/bootloader/bootloader.elf work/artifacts/bootloader-${{ matrix.environment }}.elf
+          cp build/partition_table/partition-table.bin work/artifacts/partition-table-${{ matrix.environment }}.bin
+          cp partitions.csv work/artifacts/partitions-${{ matrix.environment }}.csv
+          cp build/flasher_args.json work/artifacts/flasher_args-${{ matrix.environment }}.json
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ugly-duckling-${{ matrix.environment }}
-          path: |
-            ugly-duckling-${{ matrix.environment }}.bin
-            ugly-duckling-${{ matrix.environment }}.elf
-            debug-${{ matrix.environment }}.zip
+          path: work/artifacts/
           if-no-files-found: error
 
   unit-test:
@@ -243,6 +237,9 @@ jobs:
     needs:
       - build
     runs-on: ubuntu-latest
+    concurrency:
+      group: publish-ota-r2
+      cancel-in-progress: false
 
     steps:
       - name: Checkout source
