@@ -237,6 +237,9 @@ jobs:
     needs:
       - build
     runs-on: ubuntu-latest
+    concurrency:
+      group: publish-ota-r2
+      cancel-in-progress: false
 
     steps:
       - name: Checkout source
