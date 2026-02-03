@@ -62,6 +62,11 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ runner.os }}-${{ env.ESP_IDF_VERSION }}-${{ matrix.environment }}
 
+      - name: Create dummy data directory
+        run: |
+          mkdir -p data && \
+          echo "{}" > data/device-config.json
+
       - name: esp-idf build
         uses: espressif/esp-idf-ci-action@v1
         with:
@@ -71,7 +76,12 @@ jobs:
           extra_docker_args: -v  ${{ env.CCACHE_DIR }}:/root/.ccache
           command: |
             ccache --max-size=${{ env.CCACHE_MAXSIZE }} && \
-            idf.py build -DUD_GEN=${{ matrix.ud_gen }} -DUD_DEBUG=${{ matrix.ud_debug }} -DFARMHUB_LOG_VERBOSE=${{ env.FARMHUB_LOG_VERBOSE }} && \
+            idf.py build \
+              -DUD_GEN=${{ matrix.ud_gen }} \
+              -DUD_DEBUG=${{ matrix.ud_debug }} \
+              -DFSUPLOAD=1 \
+              -DFARMHUB_LOG_VERBOSE=${{ env.FARMHUB_LOG_VERBOSE }} \
+              && \
             ccache -s
 
       - name: clang-tidy
@@ -93,6 +103,7 @@ jobs:
           cp build/ugly-duckling.elf work/artifacts/ugly-duckling-${{ matrix.environment }}.elf
           cp build/bootloader/bootloader.bin work/artifacts/bootloader-${{ matrix.environment }}.bin
           cp build/bootloader/bootloader.elf work/artifacts/bootloader-${{ matrix.environment }}.elf
+          cp build/ota_data_initial.bin work/artifacts/ota_data_initial-${{ matrix.environment }}.bin
           cp build/partition_table/partition-table.bin work/artifacts/partition-table-${{ matrix.environment }}.bin
           cp partitions.csv work/artifacts/partitions-${{ matrix.environment }}.csv
           cp build/flasher_args.json work/artifacts/flasher_args-${{ matrix.environment }}.json
