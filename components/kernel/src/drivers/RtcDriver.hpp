@@ -10,7 +10,6 @@
 #include <Configuration.hpp>
 #include <State.hpp>
 #include <Task.hpp>
-#include <drivers/MdnsDriver.hpp>
 #include <utility>
 
 using namespace std::chrono;
@@ -27,9 +26,6 @@ LOGGING_TAG(RTC, "rtc")
  *
  * - The first task waits for the system time to be set. It sets the RTC in sync state when the time is set.
  *   This task is non-blocking, and will pass if the RTC is already set during a previous boot.
- *
- * - The second task configures the system time using the NTP server advertised by mDNS.
- *   This waits for mDNS to be ready, and then configures the system time.
  */
 class RtcDriver {
 public:
@@ -38,9 +34,8 @@ public:
         Property<std::string> host { this, "host", "" };
     };
 
-    RtcDriver(State& networkReady, const std::shared_ptr<MdnsDriver>& mdns, const std::shared_ptr<Config>& ntpConfig, StateSource& rtcInSync)
-        : mdns(mdns)
-        , ntpConfig(ntpConfig)
+    RtcDriver(State& networkReady, const std::shared_ptr<Config>& ntpConfig, StateSource& rtcInSync)
+        : ntpConfig(ntpConfig)
         , rtcInSync(rtcInSync) {
 
         if (isTimeSet()) {
@@ -52,12 +47,10 @@ public:
             while (true) {
                 {
                     networkReady.awaitSet();
-                    if (updateTime()) {
-                        trustMdnsCache = true;
-                    } else {
-                        // Attempt a retry, but with mDNS cache disabled
-                        LOGTE(RTC, "NTP update failed, retrying in 10 seconds with mDNS cache disabled");
-                        trustMdnsCache = false;
+                    if (!updateTime()) {
+                        // Attempt a retry
+                        // TODO Do exponential backoff
+                        LOGTE(RTC, "NTP update failed, retrying in 10 seconds");
                         Task::delay(10s);
                         continue;
                     }
@@ -93,26 +86,11 @@ private:
         config.ip_event_to_renew = IP_EVENT_STA_GOT_IP;
         ESP_ERROR_CHECK(esp_netif_sntp_init(&config));
 
-#ifdef WOKWI
-        LOGTI(RTC, "using default NTP server for Wokwi");
-#else
-        // TODO Check this
         if (!ntpConfig->host.get().empty()) {
-            LOGTD(RTC, "using NTP server %s from configuration",
+            LOGTD(RTC, "Using NTP server %s from configuration",
                 ntpConfig->host.get().c_str());
             esp_sntp_setservername(0, ntpConfig->host.get().c_str());
-        } else {
-            MdnsRecord ntpServer;
-            if (mdns->lookupService("ntp", "udp", ntpServer, trustMdnsCache)) {
-                LOGTD(RTC, "using NTP server %s from mDNS",
-                    ntpServer.toString().c_str());
-                esp_sntp_setserver(0, reinterpret_cast<const ip_addr_t*>(&ntpServer.ip));
-            } else {
-                LOGTD(RTC, "no NTP server configured, using default");
-            }
         }
-#endif
-        printServers();
 
         bool success = false;
         ESP_ERROR_CHECK(esp_netif_sntp_start());
@@ -123,38 +101,19 @@ private:
         if (ret == ESP_OK || ret == ESP_ERR_NOT_FINISHED) {
             rtcInSync.set();
             success = true;
-            LOGTD(RTC, "sync finished successfully");
+            LOGTD(RTC, "Sync finished successfully");
         } else if (ret == ESP_ERR_TIMEOUT) {
-            LOGTD(RTC, "waiting for time sync timed out");
+            LOGTD(RTC, "Waiting for time sync timed out");
         } else {
-            LOGTD(RTC, "waiting for time sync returned 0x%x", ret);
+            LOGTD(RTC, "Waiting for time sync returned 0x%x", ret);
         }
 
         esp_netif_sntp_deinit();
         return success;
     }
 
-    static void printServers() {
-        LOGD("List of configured NTP servers:");
-
-        for (uint8_t i = 0; i < SNTP_MAX_SERVERS; ++i) {
-            if (esp_sntp_getservername(i) != nullptr) {
-                LOGD(" - server %d: '%s'", i, esp_sntp_getservername(i));
-            } else {
-                char buff[48];
-                ip_addr_t const* ip = esp_sntp_getserver(i);
-                if (ipaddr_ntoa_r(ip, buff, 48) != nullptr) {
-                    LOGD(" - server %d: %s", i, buff);
-                }
-            }
-        }
-    }
-
-    const std::shared_ptr<MdnsDriver> mdns;
     const std::shared_ptr<Config> ntpConfig;
     StateSource& rtcInSync;
-
-    bool trustMdnsCache = true;
 };
 
 }    // namespace farmhub::kernel::drivers
