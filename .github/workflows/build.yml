@@ -82,11 +82,8 @@ jobs:
               -DFSUPLOAD=1 \
               -DFARMHUB_LOG_VERBOSE=${{ env.FARMHUB_LOG_VERBOSE }} \
               && \
+            esp-idf-sbom create -o build/ugly-duckling.spdx build/project_description.json && \
             ccache -s
-
-      - name: Generate SBOM
-        run: |
-          esp-idf-sbom create -o build/ugly-duckling.spdx build/project_description.json
 
       # Format corrleator as "job(matrixvalue1, matrixvalue2, ... )" or just "job" with a null matrix
       - name: Define correlator
