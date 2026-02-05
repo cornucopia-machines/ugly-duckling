@@ -5,7 +5,8 @@
  * - Uploads *.bin and *.elf from an artifacts directory to R2: <channel>/<version>/...
  * - <version> comes from `git describe --tags --always`.
  * - Writes per-build manifest.json (with sha256), updates latest.json, and manages all-manifests.json.
- * - Prunes old builds keeping only the most recent N builds per channel.
+ * - Prunes old snapshot builds keeping only the most recent N, with support for
+ *   pinning specific snapshots via --keep-snapshot so they survive pruning.
  *
  * Requirements: Node.js 18+, `git` on PATH.
  */
@@ -47,7 +48,8 @@ interface Config {
   branch?: string;
   commitSha?: string;
   versionOverride?: string;
-  maxBuildsPerChannel: number;
+  maxSnapshots: number;
+  keepSnapshots: Map<string, string>;
   r2AccountId: string;
   r2AccessKeyId: string;
   r2SecretAccessKey: string;
@@ -271,7 +273,8 @@ async function uploadArtifact(
   const content = readFileSync(filePath);
 
   const ext = fileName.slice(fileName.lastIndexOf("."));
-  const contentType = contentTypesByExtension[ext] ?? "application/octet-stream";
+  const contentType =
+    contentTypesByExtension[ext] ?? "application/octet-stream";
 
   await r2Put(client, bucket, key, content, contentType);
   console.log(`Uploaded ${key}`);
@@ -297,26 +300,37 @@ async function pruneOldBuilds(
   bucket: string,
   channel: string,
   manifests: BuildManifest[],
-  maxBuilds: number,
+  maxVersions: number,
+  keepVersions: Map<string, string>,
 ): Promise<BuildManifest[]> {
-  if (manifests.length <= maxBuilds) {
-    return manifests;
+  // Partition into pinned and regular manifests
+  const pinned: BuildManifest[] = [];
+  const regular: BuildManifest[] = [];
+  for (const m of manifests) {
+    const reason = keepVersions.get(m.version);
+    if (reason !== undefined) {
+      console.log(`Keeping pinned snapshot ${m.version}: ${reason}`);
+      pinned.push(m);
+    } else {
+      regular.push(m);
+    }
   }
 
-  // Sort by date (newest first)
-  const sorted = [...manifests].sort(
+  // Sort regular builds by date (newest first) and prune
+  regular.sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
 
-  const keep = sorted.slice(0, maxBuilds);
-  const remove = sorted.slice(maxBuilds);
-
+  const remove = regular.splice(maxVersions);
   for (const manifest of remove) {
     console.log(`Pruning old version: ${manifest.version}`);
     await deleteVersionFromR2(client, bucket, channel, manifest.version);
   }
 
-  return keep;
+  // Return pinned + surviving regular, sorted newest first
+  return [...pinned, ...regular].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  );
 }
 
 async function main() {
@@ -331,10 +345,26 @@ async function main() {
     .option("--commit-sha <sha>", "Commit SHA to describe (default: HEAD)")
     .option("--version-override <version>", "Override version string")
     .option(
-      "--max-builds <n>",
-      "Maximum builds to keep per channel",
+      "--max-snapshots <n>",
+      "Maximum number of snapshot builds to keep",
       (v) => Number(v),
       30,
+    )
+    .option(
+      "--keep-snapshot <version:reason>",
+      "Pin a snapshot version so it survives pruning and does not count\n" +
+        "against --max-snapshots (repeatable)",
+      (entry: string, previous: Map<string, string>) => {
+        const sep = entry.indexOf(":");
+        if (sep < 1) {
+          throw new Error(
+            `Invalid --keep-snapshot format: '${entry}'. Expected 'version:reason'.`,
+          );
+        }
+        previous.set(entry.slice(0, sep), entry.slice(sep + 1));
+        return previous;
+      },
+      new Map<string, string>(),
     )
     .requiredOption(
       "--r2-account-id <id>",
@@ -366,7 +396,8 @@ async function main() {
     branch: opts.branch,
     commitSha: opts.commitSha,
     versionOverride: opts.versionOverride,
-    maxBuildsPerChannel: opts.maxBuilds,
+    maxSnapshots: opts.maxSnapshots,
+    keepSnapshots: opts.keepSnapshot,
     r2AccountId: opts.r2AccountId,
     r2AccessKeyId: opts.r2AccessKeyId,
     r2SecretAccessKey: opts.r2SecretAccessKey,
@@ -406,7 +437,10 @@ async function main() {
   console.log(`Channel: ${channel}`);
 
   // Find artifacts
-  const artifactFiles = findFilesByExtensions(config.artifactsDir, Object.keys(contentTypesByExtension));
+  const artifactFiles = findFilesByExtensions(
+    config.artifactsDir,
+    Object.keys(contentTypesByExtension),
+  );
   if (artifactFiles.length === 0) {
     console.error(
       `ERROR: No .bin or .elf files found under ${config.artifactsDir}`,
@@ -476,14 +510,18 @@ async function main() {
   // Add to all-manifests
   allManifests.unshift(buildManifest);
 
-  // Prune old builds
-  const prunedManifests = await pruneOldBuilds(
-    client,
-    config.r2BucketName,
-    channel,
-    allManifests,
-    config.maxBuildsPerChannel,
-  );
+  // Prune old snapshot builds
+  const prunedManifests =
+    channel === "snapshots"
+      ? await pruneOldBuilds(
+          client,
+          config.r2BucketName,
+          channel,
+          allManifests,
+          config.maxSnapshots,
+          config.keepSnapshots,
+        )
+      : allManifests;
 
   // Upload updated all-manifests.json
   await uploadAllManifests(
