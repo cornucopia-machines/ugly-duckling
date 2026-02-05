@@ -83,6 +83,7 @@ jobs:
               -DFARMHUB_LOG_VERBOSE=${{ env.FARMHUB_LOG_VERBOSE }} \
               && \
             esp-idf-sbom create -o build/ugly-duckling.spdx build/project_description.json && \
+            pyspdxtools --infile build/ugly-duckling.spdx --outfile build/ugly-duckling.spdx.json && \
             ccache -s
 
       # Format corrleator as "job(matrixvalue1, matrixvalue2, ... )" or just "job" with a null matrix
@@ -96,7 +97,6 @@ jobs:
         uses: advanced-security/spdx-dependency-submission-action@v0.1.2
         with:
           filePath: "build/"
-          filePattern: "*.spdx"
           correlator: ${{ steps.matrix_parser.outputs.correlator }}
 
       - name: clang-tidy
