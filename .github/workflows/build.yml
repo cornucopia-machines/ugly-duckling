@@ -279,8 +279,7 @@ jobs:
             --repo-root ../.. \
             --base-url "${{ vars.R2_PUBLIC_URL }}" \
             --branch "${{ github.ref_name }}" \
-            --commit-sha "${{ github.sha }}" \
-            --max-builds 10
+            --commit-sha "${{ github.sha }}"
         env:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}

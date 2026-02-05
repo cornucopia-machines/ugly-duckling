@@ -47,7 +47,7 @@ interface Config {
   branch?: string;
   commitSha?: string;
   versionOverride?: string;
-  maxBuildsPerChannel: number;
+  maxSnapshotBuilds: number;
   r2AccountId: string;
   r2AccessKeyId: string;
   r2SecretAccessKey: string;
@@ -271,7 +271,8 @@ async function uploadArtifact(
   const content = readFileSync(filePath);
 
   const ext = fileName.slice(fileName.lastIndexOf("."));
-  const contentType = contentTypesByExtension[ext] ?? "application/octet-stream";
+  const contentType =
+    contentTypesByExtension[ext] ?? "application/octet-stream";
 
   await r2Put(client, bucket, key, content, contentType);
   console.log(`Uploaded ${key}`);
@@ -331,8 +332,8 @@ async function main() {
     .option("--commit-sha <sha>", "Commit SHA to describe (default: HEAD)")
     .option("--version-override <version>", "Override version string")
     .option(
-      "--max-builds <n>",
-      "Maximum builds to keep per channel",
+      "--max-snapshot-builds <n>",
+      "Maximum number of snapshot builds to keep",
       (v) => Number(v),
       30,
     )
@@ -366,7 +367,7 @@ async function main() {
     branch: opts.branch,
     commitSha: opts.commitSha,
     versionOverride: opts.versionOverride,
-    maxBuildsPerChannel: opts.maxBuilds,
+    maxSnapshotBuilds: opts.maxSnapshotBuilds,
     r2AccountId: opts.r2AccountId,
     r2AccessKeyId: opts.r2AccessKeyId,
     r2SecretAccessKey: opts.r2SecretAccessKey,
@@ -406,7 +407,10 @@ async function main() {
   console.log(`Channel: ${channel}`);
 
   // Find artifacts
-  const artifactFiles = findFilesByExtensions(config.artifactsDir, Object.keys(contentTypesByExtension));
+  const artifactFiles = findFilesByExtensions(
+    config.artifactsDir,
+    Object.keys(contentTypesByExtension),
+  );
   if (artifactFiles.length === 0) {
     console.error(
       `ERROR: No .bin or .elf files found under ${config.artifactsDir}`,
@@ -476,14 +480,17 @@ async function main() {
   // Add to all-manifests
   allManifests.unshift(buildManifest);
 
-  // Prune old builds
-  const prunedManifests = await pruneOldBuilds(
-    client,
-    config.r2BucketName,
-    channel,
-    allManifests,
-    config.maxBuildsPerChannel,
-  );
+  // Prune old snapshot builds
+  const prunedManifests =
+    channel === "snapshots"
+      ? await pruneOldBuilds(
+          client,
+          config.r2BucketName,
+          channel,
+          allManifests,
+          config.maxSnapshotBuilds,
+        )
+      : allManifests;
 
   // Upload updated all-manifests.json
   await uploadAllManifests(
