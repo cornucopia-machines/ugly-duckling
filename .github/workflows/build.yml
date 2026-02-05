@@ -84,6 +84,16 @@ jobs:
               && \
             ccache -s
 
+      - name: Generate SBOM
+        run: |
+          esp-idf-sbom create -o build/ugly-duckling.spdx build/project_description.json
+
+      - name: SBOM upload
+        uses: advanced-security/spdx-dependency-submission-action@v0.1.2
+        with:
+          filePath: "build/"
+          filePattern: "*.spdx"
+
       - name: clang-tidy
         uses: espressif/esp-idf-ci-action@v1
         with:
@@ -107,6 +117,7 @@ jobs:
           cp build/partition_table/partition-table.bin work/artifacts/partition-table-${{ matrix.environment }}.bin
           cp partitions.csv work/artifacts/partitions-${{ matrix.environment }}.csv
           cp build/flasher_args.json work/artifacts/flasher_args-${{ matrix.environment }}.json
+          cp build/ugly-duckling.spdx work/artifacts/ugly-duckling-${{ matrix.environment }}.spdx
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

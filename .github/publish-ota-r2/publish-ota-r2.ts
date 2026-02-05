@@ -256,6 +256,7 @@ const contentTypesByExtension: Record<string, string> = {
   ".csv": "text/csv",
   ".elf": "application/x-elf",
   ".json": "application/json",
+  ".spdx": "text/spdx",
 };
 
 async function uploadArtifact(
@@ -405,12 +406,7 @@ async function main() {
   console.log(`Channel: ${channel}`);
 
   // Find artifacts
-  const artifactFiles = findFilesByExtensions(config.artifactsDir, [
-    ".bin",
-    ".csv",
-    ".elf",
-    ".json",
-  ]);
+  const artifactFiles = findFilesByExtensions(config.artifactsDir, Object.keys(contentTypesByExtension));
   if (artifactFiles.length === 0) {
     console.error(
       `ERROR: No .bin or .elf files found under ${config.artifactsDir}`,
