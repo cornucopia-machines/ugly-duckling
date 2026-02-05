@@ -86,19 +86,6 @@ jobs:
             pyspdxtools --novalidation --infile build/ugly-duckling.spdx --outfile build/ugly-duckling.spdx.json && \
             ccache -s
 
-      # Format corrleator as "job(matrixvalue1, matrixvalue2, ... )" or just "job" with a null matrix
-      - name: Define correlator
-        id: matrix_parser
-        run: |
-            correlator=$(echo '${{ toJSON(matrix) }}' | jq -r 'if . == null then "${{ github.job }}" else "${{ github.job }}(" + ([.[] | tostring] | join(", ")) + ")" end')
-            echo "correlator=$correlator" >> $GITHUB_OUTPUT
-
-      - name: SBOM upload
-        uses: advanced-security/spdx-dependency-submission-action@v0.1.2
-        with:
-          filePath: "build/"
-          correlator: ${{ steps.matrix_parser.outputs.correlator }}
-
       - name: clang-tidy
         uses: espressif/esp-idf-ci-action@v1
         with:
@@ -123,6 +110,7 @@ jobs:
           cp partitions.csv work/artifacts/partitions-${{ matrix.environment }}.csv
           cp build/flasher_args.json work/artifacts/flasher_args-${{ matrix.environment }}.json
           cp build/ugly-duckling.spdx work/artifacts/ugly-duckling-${{ matrix.environment }}.spdx
+          cp build/ugly-duckling.spdx.json work/artifacts/ugly-duckling-${{ matrix.environment }}.spdx.json
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
