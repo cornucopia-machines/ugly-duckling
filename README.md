@@ -18,7 +18,7 @@ The MQTT configuration is stored in `mqtt-config.json` in the root of the SPIFFS
 
 ```jsonc
 {
-  "host": "...", // broker host name, look up via mDNS if omitted
+  "host": "...", // broker host name
   "port": 1883, // broker port, defaults to 1883
   "clientId": "chicken-door", // client ID, defaults to "ugly-duckling-$instance" if omitted
   "queueSize": 16 // MQTT message queue size, defaults to 16
@@ -50,11 +50,6 @@ To enable this, the following parameters must be present in the `mqtt-config.jso
 ```
 
 The certificates and keys must be in Base64 encoded PEM format, each line must be a separate element in an array.
-
-### MQTT zeroconf
-
-If the `mqtt-config.json` file is missing, or the `mqtt.host` parameter is omitted or left empty, the firmware will try to look up the first MQTT server (host and port) via mDNS/Bonjour.
-If there are multiple hits, the first one is used.
 
 ## Device configuration
 

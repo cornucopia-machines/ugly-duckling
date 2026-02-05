@@ -16,7 +16,6 @@
 #include <Configuration.hpp>
 #include <State.hpp>
 #include <Task.hpp>
-#include <drivers/MdnsDriver.hpp>
 #include <mqtt/PendingMessages.hpp>
 
 using namespace std::chrono;
@@ -65,12 +64,10 @@ public:
 
     MqttDriver(
         State& networkReady,
-        const std::shared_ptr<MdnsDriver>& mdns,
         const std::shared_ptr<Config>& config,
         const std::string& instanceName,
         StateSource& ready)
         : networkReady(networkReady)
-        , mdns(mdns)
         , configHostname(config->host.get())
         , configPort(config->port.get())
         , configServerCert(joinStrings(config->serverCert.get()))
@@ -110,15 +107,7 @@ public:
 #endif
             port = 1883;
 #else
-            MdnsRecord mqttServer;
-            while (!mdns->lookupService("mqtt", "tcp", mqttServer, trustMdnsCache)) {
-                LOGTE(MQTT, "Failed to lookup MQTT server from mDNS");
-                trustMdnsCache = false;
-                Task::delay(5s);
-            }
-            trustMdnsCache = true;
-            hostname = mqttServer.ipOrHost();
-            port = mqttServer.port;
+            throw std::runtime_error("No MQTT server specified in configuration");
 #endif
         } else {
             hostname = configHostname;
@@ -365,8 +354,6 @@ private:
                         LOGTE(MQTT, "Connecting to MQTT server timed out");
                         ready.clear();
                         disconnect();
-                        // Make sure we re-lookup the server address when we retry
-                        trustMdnsCache = false;
                         state = MqttState::Disconnected;
                     }
                     break;
@@ -525,15 +512,11 @@ private:
                             event->error_handle->esp_tls_last_esp_err,
                             event->error_handle->esp_tls_stack_err,
                             event->error_handle->esp_tls_cert_verify_flags);
-                        // In case we need to re-connect, make sure we have the right IP
-                        trustMdnsCache = false;
                         break;
 
                     case MQTT_ERROR_TYPE_CONNECTION_REFUSED:
                         LOGTE(MQTT, "Connection refused; return code: %d",
                             event->error_handle->connect_return_code);
-                        // In case we need to re-connect, make sure we have the right IP
-                        trustMdnsCache = false;
                         break;
 
                     case MQTT_ERROR_TYPE_SUBSCRIBE_FAILED:
@@ -702,8 +685,6 @@ private:
     }
 
     State& networkReady;
-    const std::shared_ptr<MdnsDriver> mdns;
-    std::atomic<bool> trustMdnsCache = true;
 
     const std::string configHostname;
     const unsigned int configPort;

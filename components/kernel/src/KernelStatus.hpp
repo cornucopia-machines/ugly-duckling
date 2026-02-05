@@ -16,7 +16,6 @@
 #include <PowerManager.hpp>
 #include <StateManager.hpp>
 #include <drivers/LedDriver.hpp>
-#include <drivers/MdnsDriver.hpp>
 #include <drivers/RtcDriver.hpp>
 #include <drivers/SwitchManager.hpp>
 #include <drivers/WiFiDriver.hpp>
@@ -44,7 +43,6 @@ public:
     StateSource networkConnecting = manager.createStateSource("network-connecting");
     StateSource networkReady = manager.createStateSource("network-ready");
     StateSource configPortalRunning = manager.createStateSource("config-portal-running");
-    StateSource mdnsReady = manager.createStateSource("mdns-ready");
     StateSource rtcInSync = manager.createStateSource("rtc-in-sync");
     StateSource mqttReady = manager.createStateSource("mqtt-ready");
     StateSource kernelReady = manager.createStateSource("kernel-ready");

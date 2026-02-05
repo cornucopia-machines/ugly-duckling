@@ -172,8 +172,8 @@ std::shared_ptr<TConfiguration> loadConfig(const std::shared_ptr<FileSystem>& fs
     return config;
 }
 
-std::shared_ptr<MqttRoot> initMqtt(const std::shared_ptr<ModuleStates>& states, const std::shared_ptr<MdnsDriver>& mdns, const std::shared_ptr<MqttDriver::Config>& mqttConfig, const std::string& instance, const std::string& location) {
-    auto mqtt = std::make_shared<MqttDriver>(states->networkReady, mdns, mqttConfig, instance, states->mqttReady);
+std::shared_ptr<MqttRoot> initMqtt(const std::shared_ptr<ModuleStates>& states, const std::shared_ptr<MqttDriver::Config>& mqttConfig, const std::string& instance, const std::string& location) {
+    auto mqtt = std::make_shared<MqttDriver>(states->networkReady, mqttConfig, instance, states->mqttReady);
     return std::make_shared<MqttRoot>(mqtt, (location.empty() ? "" : location + "/") + "devices/ugly-duckling/" + instance);
 }
 
@@ -427,15 +427,12 @@ static void startDevice() {
     new DebugConsole(batteryManager, wifi);
 #endif
 
-    // Init mDNS
-    auto mdns = std::make_shared<MdnsDriver>(wifi->getNetworkReady(), settings->getHostname(), "ugly-duckling", farmhubVersion, states->mdnsReady);
-
     // Init real time clock
-    auto rtc = std::make_shared<RtcDriver>(wifi->getNetworkReady(), mdns, settings->ntp.get(), states->rtcInSync);
+    auto rtc = std::make_shared<RtcDriver>(wifi->getNetworkReady(), settings->ntp.get(), states->rtcInSync);
 
     // Init MQTT connection
     auto mqttConfig = loadConfig<MqttDriver::Config>(fs, "/mqtt-config.json");
-    auto mqttRoot = initMqtt(states, mdns, mqttConfig, settings->instance.get(), settings->location.get());
+    auto mqttRoot = initMqtt(states, mqttConfig, settings->instance.get(), settings->location.get());
     MqttLog::init(settings->publishLogs.get(), logRecords, mqttRoot);
     registerBasicCommands(mqttRoot);
     registerFileCommands(mqttRoot, fs);

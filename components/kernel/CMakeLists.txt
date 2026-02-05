@@ -17,7 +17,6 @@ idf_component_register(
         esp_timer
         esp_wifi
         espcoredump
-        espressif__mdns
         mbedtls
         mqtt
         nvs_flash
