@@ -62,10 +62,10 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ runner.os }}-${{ env.ESP_IDF_VERSION }}-${{ matrix.environment }}
 
-      - name: Create dummy data directory
+      - name: Create dummy config directory
         run: |
-          mkdir -p data && \
-          echo "{}" > data/device-config.json
+          mkdir -p config && \
+          echo "{}" > config/device-config.json
 
       - name: esp-idf build
         uses: espressif/esp-idf-ci-action@v1
