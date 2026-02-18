@@ -98,21 +98,20 @@ public:
     }
 
     void configMqttClient(esp_mqtt_client_config_t& config) {
-        if (configHostname.empty()) {
 #ifdef WOKWI
+        port = 1883;
 #ifdef WOKWI_MQTT_HOST
-            hostname = WOKWI_MQTT_HOST;
+        hostname = WOKWI_MQTT_HOST;
 #else
-            hostname = "host.wokwi.internal";
+        hostname = "host.wokwi.internal";
 #endif
-            port = 1883;
 #else
+        if (configHostname.empty()) {
             throw std::runtime_error("No MQTT server specified in configuration");
-#endif
-        } else {
-            hostname = configHostname;
-            port = configPort;
         }
+        hostname = configHostname;
+        port = configPort;
+#endif
 
         config = {
             .broker {
@@ -162,6 +161,7 @@ public:
             config.broker.address.port,
             config.credentials.client_id);
 
+#ifndef WOKWI
         if (!configServerCert.empty()) {
             config.broker.address.transport = MQTT_TRANSPORT_OVER_SSL;
             config.broker.verification.certificate = configServerCert.c_str();
@@ -175,6 +175,7 @@ public:
                     config.credentials.authentication.certificate);
             }
         }
+#endif
     }
 
 private:
