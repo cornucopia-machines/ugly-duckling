@@ -97,6 +97,10 @@ public:
         return ready;
     }
 
+    void populateTelemetry(JsonObject& json) {
+        json["disconnects"] = disconnectCount.exchange(0, std::memory_order_relaxed);
+    }
+
     void configMqttClient(esp_mqtt_client_config_t& config) {
         if (configHostname.empty()) {
 #ifdef WOKWI
@@ -348,6 +352,7 @@ private:
                     connect(nextSessionShouldBeClean);
                     state = MqttState::Connecting;
                     connectionStarted = now;
+                    disconnectCount++;
                     break;
                 case MqttState::Connecting:
                     if (now - connectionStarted > MQTT_CONNECTION_TIMEOUT) {
@@ -704,6 +709,8 @@ private:
     // TODO Use a map instead
     std::list<Subscription> subscriptions;
     PendingMessages pendingMessages;
+
+    std::atomic<int> disconnectCount { 0 };
 
     friend class MqttRoot;
 };

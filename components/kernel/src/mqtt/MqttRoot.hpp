@@ -68,12 +68,13 @@ public:
         return mqtt->subscribe(fullTopic(suffix), qos, std::move(handler));
     }
 
+    const std::shared_ptr<MqttDriver> mqtt;
+
 private:
     std::string fullTopic(const std::string& suffix) const {
         return rootTopic + "/" + suffix;
     }
 
-    const std::shared_ptr<MqttDriver> mqtt;
     const std::string rootTopic;
     std::unordered_map<std::string, CommandHandler> commandHandlers;
 };

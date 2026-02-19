@@ -87,6 +87,7 @@ public:
                 LOGTD(WIFI, "Failed to get AP info: %s", esp_err_to_name(err));
             }
         }
+        json["disconnects"] = disconnectCount.exchange(0, std::memory_order_relaxed);
     }
 
     State& getNetworkConnecting() {
@@ -275,6 +276,7 @@ private:
                         connected = false;
                         networkConnecting.clear();
                         LOGTD(WIFI, "Disconnected from the network");
+                        disconnectCount++;
                         break;
                     case WiFiEvent::ProvisioningFinished:
                         configPortalRunning.clear();
@@ -419,6 +421,8 @@ private:
     Mutex metadataMutex;
     std::optional<std::string> ssid;
     std::optional<esp_ip4_addr_t> ip;
+
+    std::atomic<int> disconnectCount { 0 };
 };
 
 }    // namespace farmhub::kernel::drivers
