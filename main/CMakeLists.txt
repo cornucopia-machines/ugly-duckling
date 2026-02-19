@@ -53,5 +53,5 @@ endif()
 
 # Use `idf.py -DFSUPLOAD=1 flash` to upload the data partition
 if(DEFINED FSUPLOAD AND FSUPLOAD)
-    spiffs_create_partition_image(data ${CMAKE_SOURCE_DIR}/data FLASH_IN_PROJECT)
+    spiffs_create_partition_image(data ${CMAKE_SOURCE_DIR}/config FLASH_IN_PROJECT)
 endif()
