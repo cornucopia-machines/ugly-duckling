@@ -4,7 +4,7 @@
 
 - Firmware entrypoint in `main/` (see `main/main.cpp`); board-specific definitions in `components/devices/src/devices/*.hpp`; shared logic in `components/kernel`, `components/peripherals`, `components/peripherals-api`, `components/utils`, and `components/functions`.
 - Test-support utilities live in `components/test-support`; test suites sit under `test/unit-tests`, `test/embedded-tests`, and `test/e2e-tests`.
-- SPIFFS payloads live in `data/` (with templates in `data-templates/`); Wokwi diagrams in `wokwi/`; docs and examples in `docs/`; generated outputs in `build/`.
+- SPIFFS payloads live in `config/` (with templates in `config-templates/`); Wokwi diagrams in `wokwi/`; docs and examples in `docs/`; generated outputs in `build/`.
 - Helper scripts stay at repo root (e.g., `generate-clang-tidy-compile-db.py`, `lookup-backtrace.py`, `idf-docker.py`); CI workflows mirror the local steps.
 
 ## Build, Test, and Development Commands
@@ -12,7 +12,7 @@
 - Standard build: `idf.py build -DUD_GEN=MK8 [-DUD_DEBUG=1]` (set `IDF_TARGET` for the generation; `UD_DEBUG=1` for verbose logging).
 - Flash & monitor: `idf.py flash [-DFSUPLOAD=1]` to push firmware (+SPIFFS when set), then `idf.py monitor`.
 - Wokwi/sim builds: `idf.py -DUD_GEN=MK6 -DUD_DEBUG=0 -DFSUPLOAD=1 -DWOKWI=1 build` (keep `WOKWI_CLI_TOKEN` set for tests).
-- SPIFFS-only push: `mkspiffs -c data -s 0x30000 build/data.bin; esptool write_flash 0x3D0000 build/data.bin`.
+- SPIFFS-only push: `mkspiffs -c config -s 0x30000 build/config.bin; esptool write_flash 0x3D0000 build/config.bin`.
 - Native unit tests: `cmake -S test/unit-tests -B test/unit-tests/build-native -G Ninja && cmake --build test/unit-tests/build-native && ./test/unit-tests/build-native/ugly-duckling-unit-tests`.
 - Embedded/e2e: from `test/embedded-tests` run `idf.py build` then `pytest --embedded-services idf,wokwi pytest_embedded-tests.py`; from `test/e2e-tests` build with `-DUD_GEN=MK6 -DUD_DEBUG=1 -DFSUPLOAD=1 -DWOKWI=1` before invoking Wokwi/pytest.
 
@@ -26,7 +26,7 @@
 ## Testing Guidelines
 
 - Add/extend tests alongside the closest suite: fast logic in `test/unit-tests/main`, IDF-integrated flows in `test/embedded-tests`, MQTT/WiFi behavior in `test/e2e-tests`. Prefer deterministic Wokwi fixtures over hardware.
-- Use clear test names mirroring the behavior under test; keep payload samples under `data-templates/` or dedicated fixtures instead of inline strings.
+- Use clear test names mirroring the behavior under test; keep payload samples under `config-templates/` or dedicated fixtures instead of inline strings.
 - Capture artifacts (`pytest` logs, serial output) when touching connectivity, and document required env vars (`WOKWI_CLI_TOKEN`, `WOKWI_CLI_SERVER` as in CI).
 
 ## Commit & Pull Request Guidelines
@@ -36,6 +36,6 @@
 
 ## Security & Configuration Tips
 
-- Never commit real MQTT credentials, certificates, or device configs; keep samples under `data-templates/` and load real values into SPIFFS locally.
+- Never commit real MQTT credentials, certificates, or device configs; keep samples under `config-templates/` and load real values into SPIFFS locally.
 - Prefer editing defaults (`sdkconfig.defaults`, `sdkconfig.*.defaults`) and regenerating `sdkconfig` rather than hand-editing the tracked file; avoid drifting from the CI matrix.
 - Keep `dependencies.lock` and `managed_components/` in sync with ESP-IDF tooling; avoid manual edits unless vendoring is intentional.

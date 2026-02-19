@@ -175,12 +175,12 @@ If you also want to upload the SPIFFS image with the firmware, add `-DFSUPLOAD=1
 idf.py -DFSUPLOAD=1 flash
 ```
 
-#### Uploading just data
+#### Uploading just config
 
 To upload only the SPIFFS image:
 
 ```bash
-mkspiffs -c data -s 0x30000 build/data.bin; esptool write_flash 0x3D0000 build/data.bin
+mkspiffs -c config -s 0x30000 build/config.bin; esptool write_flash 0x3D0000 build/config.bin
 ```
 
 ### Monitoring
