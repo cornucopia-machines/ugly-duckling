@@ -277,13 +277,13 @@ void initTelemetryPublishTask(
     Task::loop("telemetry", 8192, [publishInterval, watchdog, mqttRoot, batteryManager, powerManager, wifi, telemetryCollector, telemetryPublishQueue](Task& task) {
         task.markWakeTime();
 
-        mqttRoot->publish("telemetry", [batteryManager, powerManager, wifi, telemetryCollector](JsonObject& telemetry) {
+        mqttRoot->publish("telemetry", [batteryManager, powerManager, wifi, mqttRoot, telemetryCollector](JsonObject& telemetry) {
             telemetry["uptime"] = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
             telemetry["timestamp"] = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 
             if (batteryManager != nullptr) {
                 auto battery = telemetry["battery"].to<JsonObject>();
-                battery["voltage"] = static_cast<double>(batteryManager->getVoltage()) / 1000.0; // Convert to volts
+                battery["voltage"] = static_cast<double>(batteryManager->getVoltage()) / 1000.0;    // Convert to volts
                 battery["percentage"] = batteryManager->getPercentage();
                 auto current = batteryManager->getCurrent();
                 if (current.has_value()) {
@@ -298,11 +298,12 @@ void initTelemetryPublishTask(
             auto wifiData = telemetry["wifi"].to<JsonObject>();
             wifi->populateTelemetry(wifiData);
 
-#if defined(FARMHUB_DEBUG) || defined(FARMHUB_REPORT_MEMORY)
+            auto mqttData = telemetry["mqtt"].to<JsonObject>();
+            mqttRoot->mqtt->populateTelemetry(mqttData);
+
             auto memoryData = telemetry["memory"].to<JsonObject>();
             memoryData["free-heap"] = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
             memoryData["min-heap"] = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL);
-#endif
 
             auto powerManagementData = telemetry["pm"].to<JsonObject>();
             powerManager->populateTelemetry(powerManagementData);
@@ -394,8 +395,7 @@ static void startDevice() {
 
     // Init switch and button handling
     auto switches = std::make_shared<SwitchManager>();
-    switches->registerSwitch({
-        .name = "factory-reset",
+    switches->registerSwitch({ .name = "factory-reset",
         .pin = deviceDefinition->bootPin,
         .mode = SwitchMode::PullUp,
         .onDisengaged = [statusLed, telemetryPublisher](const SwitchEvent& event) {
@@ -410,8 +410,7 @@ static void startDevice() {
                 LOGD("Publishing telemetry after %lld ms", duration.count());
                 telemetryPublisher->requestTelemetryPublishing();
             }
-        }
-    });
+        } });
 
     // Init battery management
     auto shutdownManager = std::make_shared<ShutdownManager>();
