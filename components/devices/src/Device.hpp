@@ -352,15 +352,15 @@ static void startDevice() {
 
     auto deviceDefinition = std::make_shared<TDeviceDefinition>();
 
-    auto nvs = std::make_shared<NvsStore>("config");
+    auto configNvs = std::make_shared<NvsStore>("config");
 
     LOGD("NVS configurations:");
-    nvs->list([](const std::string& key) {
+    configNvs->list([](const std::string& key) {
         LOGD(" - %s", key.c_str());
     });
 
-    auto networkConfig = loadConfigFromNvs<NetworkConfig>(nvs, "network-config");
-    auto settings = loadConfigFromNvs<TDeviceSettings>(nvs, "device-config");
+    auto networkConfig = loadConfigFromNvs<NetworkConfig>(configNvs, "network-config");
+    auto settings = loadConfigFromNvs<TDeviceSettings>(configNvs, "device-config");
 
     auto watchdog = initWatchdog(settings->watchdogTimeout.get());
 
@@ -447,8 +447,8 @@ static void startDevice() {
     registerNvsCommands(mqttRoot);
 
     // Handle any pending HTTP update (will reboot if update was required and was successful)
-    registerHttpUpdateCommand(mqttRoot, nvs);
-    HttpUpdater::performPendingHttpUpdateIfNecessary(nvs, wifi, watchdog);
+    registerHttpUpdateCommand(mqttRoot, configNvs);
+    HttpUpdater::performPendingHttpUpdateIfNecessary(configNvs, wifi, watchdog);
 
     auto pcnt = std::make_shared<PcntManager>();
     auto peripheralsNvs = std::make_shared<NvsStore>("perf-state");
