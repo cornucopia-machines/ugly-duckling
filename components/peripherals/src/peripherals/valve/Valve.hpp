@@ -33,9 +33,10 @@ class Valve final
 public:
     Valve(
         const std::string& name,
-        std::unique_ptr<ValveControlStrategy> _strategy)
+        std::unique_ptr<ValveControlStrategy> _strategy,
+        const std::shared_ptr<NvsStore>& nvs)
         : Peripheral(name)
-        , nvs(name)
+        , nvs(nvs)
         , strategy(std::move(_strategy)) {
 
         LOGI("Creating valve '%s' with strategy %s",
@@ -56,7 +57,7 @@ public:
             default:
                 // Try to load from NVS
                 TargetState lastStoredState;
-                if (nvs.get("state", lastStoredState)) {
+                if (nvs->get(name, lastStoredState)) {
                     initState = lastStoredState;
                     LOGI("Restored state for valve '%s' from NVS: %d",
                         name.c_str(), static_cast<int>(state));
@@ -139,13 +140,13 @@ private:
 
     void setState(ValveState state) {
         this->state = state;
-        if (!nvs.set("state", state)) {
+        if (!nvs->set(name, state)) {
             LOGE("Failed to store state for valve '%s': %d",
                 name.c_str(), static_cast<int>(state));
         }
     }
 
-    NvsStore nvs;
+    const std::shared_ptr<NvsStore> nvs;
     const std::unique_ptr<ValveControlStrategy> strategy;
     ValveState state = ValveState::None;
 };

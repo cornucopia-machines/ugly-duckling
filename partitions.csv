@@ -1,8 +1,9 @@
-# Name,   Type, SubType, Offset,  Size, Flags
-otadata,data,ota,0x1E000,0x2000,
-app0,app,ota_0,0x20000,0x280000,
-app1,app,ota_1,0x2A0000,0x280000,
-nvs,data,nvs,0x520000,0x5000,
-config,data,spiffs,0x525000,0x40000,
-data,data,spiffs,0x565000,0x25B000,
-coredump,data,coredump,0x7C0000,0x40000,
+# Name, Type, SubType, Offset, Size, Flags
+phy_init, data, phy, 0x13000, 0x1000,
+otadata, data, ota, 0x14000, 0x2000,
+nvs_keys, data, nvs_keys, 0x16000, 0x2000,
+nvs, data, nvs, 0x18000, 0x48000,
+coredump, data, coredump, 0x60000, 0x40000,
+app0, app, ota_0, 0xA0000, 0x300000,
+app1, app, ota_1, 0x3A0000, 0x300000,
+data, data, littlefs, 0x6A0000, 0x160000,

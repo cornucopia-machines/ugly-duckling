@@ -1,6 +1,4 @@
 {
-  "instance": "test-wokwi",
-  "location": "area-51",
   "functions": [
     {
       "name": "plot",

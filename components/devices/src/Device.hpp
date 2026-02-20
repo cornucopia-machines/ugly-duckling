@@ -16,14 +16,17 @@
 static const char* const farmhubVersion = reinterpret_cast<const char*>(esp_app_get_description()->version);
 
 #include <BatteryManager.hpp>
-#include <ConfigurationFile.hpp>
 #include <Console.hpp>
 #include <CrashManager.hpp>
 #include <DebugConsole.hpp>
 #include <HttpUpdate.hpp>
 #include <KernelStatus.hpp>
 #include <Log.hpp>
+#include <NvsConfiguration.hpp>
+#include <NvsStore.hpp>
 #include <Strings.hpp>
+#include <drivers/RtcDriver.hpp>
+#include <mqtt/MqttDriver.hpp>
 #include <mqtt/MqttLog.hpp>
 
 #include <devices/DeviceDefinition.hpp>
@@ -101,9 +104,24 @@ static void dumpPerTaskHeapInfo() {
 }
 #endif
 
-static constexpr const char* CONFIG_PARTITION = "config";
+/**
+ * @brief Network configuration: MQTT broker settings, NTP, plus device instance and location.
+ * Stored under the "network-config" key in NVS.
+ */
+struct NetworkConfig : MqttDriver::Config {
+    Property<std::string> instance { this, "instance", getMacAddress() };
+    Property<std::string> location { this, "location" };
+    NamedConfigurationEntry<RtcDriver::Config> ntp { this, "ntp" };
 
-static void performFactoryReset(const std::shared_ptr<LedDriver>& statusLed, bool completeReset) {
+    std::string getHostname() const {
+        std::string hostname = instance.get();
+        std::ranges::replace(hostname, ':', '-');
+        std::erase(hostname, '?');
+        return hostname;
+    }
+};
+
+static void performFactoryReset(const std::shared_ptr<LedDriver>& statusLed, const std::shared_ptr<NvsStore>& nvs, bool completeReset) {
     LOGI("Performing factory reset");
 
     statusLed->turnOn();
@@ -112,18 +130,18 @@ static void performFactoryReset(const std::shared_ptr<LedDriver>& statusLed, boo
     Task::delay(1s);
     statusLed->turnOn();
 
+    LOGI(" - Deleting wifi NVS entries...");
+    esp_wifi_restore();
+
     if (completeReset) {
         Task::delay(1s);
         statusLed->turnOff();
         Task::delay(1s);
         statusLed->turnOn();
 
-        LOGI(" - Deleting the file system...");
-        FileSystem::format(CONFIG_PARTITION);
+        LOGI(" - Deleting all NVS config entries...");
+        nvs_flash_erase();
     }
-
-    LOGI(" - Clearing NVS...");
-    nvs_flash_erase();
 
     LOGI(" - Restarting...");
     esp_restart();
@@ -166,17 +184,12 @@ std::shared_ptr<Watchdog> initWatchdog(seconds timeout) {
     });
 }
 
-template <std::derived_from<ConfigurationSection> TConfiguration>
-std::shared_ptr<TConfiguration> loadConfig(const std::shared_ptr<FileSystem>& fs, const std::string& path) {
-    auto config = std::make_shared<TConfiguration>();
-    // TODO This should just be a "load()" call
-    ConfigurationFile<TConfiguration> configFile(fs, path, config);
-    return config;
-}
-
-std::shared_ptr<MqttRoot> initMqtt(const std::shared_ptr<ModuleStates>& states, const std::shared_ptr<MqttDriver::Config>& mqttConfig, const std::string& instance, const std::string& location) {
-    auto mqtt = std::make_shared<MqttDriver>(states->networkReady, mqttConfig, instance, states->mqttReady);
-    return std::make_shared<MqttRoot>(mqtt, (location.empty() ? "" : location + "/") + "devices/ugly-duckling/" + instance);
+std::shared_ptr<MqttRoot> initMqtt(const std::shared_ptr<ModuleStates>& states, const std::shared_ptr<NetworkConfig>& networkConfig, StateSource& mqttReady) {
+    // NetworkConfig inherits from MqttDriver::Config, so we can upcast
+    auto mqttConfig = std::static_pointer_cast<MqttDriver::Config>(networkConfig);
+    auto mqtt = std::make_shared<MqttDriver>(states->networkReady, mqttConfig, networkConfig->instance.get(), mqttReady);
+    const std::string& location = networkConfig->location.get();
+    return std::make_shared<MqttRoot>(mqtt, (location.empty() ? "" : location + "/") + "devices/ugly-duckling/" + networkConfig->instance.get());
 }
 
 void registerBasicCommands(const std::shared_ptr<MqttRoot>& mqttRoot) {
@@ -195,64 +208,46 @@ void registerBasicCommands(const std::shared_ptr<MqttRoot>& mqttRoot) {
     });
 }
 
-void registerFileCommands(const std::shared_ptr<MqttRoot>& mqttRoot, const std::shared_ptr<FileSystem>& fs) {
-    mqttRoot->registerCommand("files/list", [fs](const JsonObject&, JsonObject& response) {
-        JsonArray files = response["files"].to<JsonArray>();
-        fs->readDir("/", [files](const std::string& name, off_t size) {
-            auto file = files.add<JsonObject>();
-            file["name"] = name;
-            file["size"] = size;
+void registerNvsCommands(const std::shared_ptr<MqttRoot>& mqttRoot, const std::shared_ptr<NvsStore>& nvs) {
+    mqttRoot->registerCommand("nvs/list", [nvs](const JsonObject&, JsonObject& response) {
+        JsonArray entries = response["entries"].to<JsonArray>();
+        nvs->list([entries](const std::string& key) {
+            auto entry = entries.add<JsonObject>();
+            entry["key"] = key;
         });
     });
-    mqttRoot->registerCommand("files/read", [fs](const JsonObject& request, JsonObject& response) {
-        std::string path = request["path"];
-        if (!path.starts_with("/")) {
-            path = "/" + path;
-        }
-        LOGI("Reading %s",
-            path.c_str());
-        response["path"] = path;
-        if (fs->exists(path)) {
-            response["size"] = fs->size(path);
-            auto contents = fs->readAll(path);
-            if (contents.has_value()) {
-                response["contents"] = contents.value();
-            }
+    mqttRoot->registerCommand("nvs/read", [nvs](const JsonObject& request, JsonObject& response) {
+        std::string key = request["key"].as<std::string>();
+        LOGI("Reading NVS key '%s'", key.c_str());
+        response["key"] = key;
+        JsonDocument valueDoc;
+        if (nvs->getJson(key, valueDoc)) {
+            response["value"].set(valueDoc.as<JsonVariant>());
         } else {
-            response["error"] = "File not found";
+            response["error"] = "Key not found";
         }
     });
-    mqttRoot->registerCommand("files/write", [fs](const JsonObject& request, JsonObject& response) {
-        std::string path = request["path"];
-        if (!path.starts_with("/")) {
-            path = "/" + path;
-        }
-        LOGI("Writing %s",
-            path.c_str());
-        std::string contents = request["contents"];
-        response["path"] = path;
-        size_t written = fs->writeAll(path, contents);
-        response["written"] = written;
+    mqttRoot->registerCommand("nvs/write", [nvs](const JsonObject& request, JsonObject& response) {
+        std::string key = request["key"].as<std::string>();
+        LOGI("Writing NVS key '%s'", key.c_str());
+        response["key"] = key;
+        nvs->setJson(key, request["value"]);
+        response["written"] = true;
     });
-    mqttRoot->registerCommand("files/remove", [fs](const JsonObject& request, JsonObject& response) {
-        std::string path = request["path"];
-        if (!path.starts_with("/")) {
-            path = "/" + path;
-        }
-        LOGI("Removing %s",
-            path.c_str());
-        response["path"] = path;
-        int err = fs->remove(path);
-        if (err == 0) {
+    mqttRoot->registerCommand("nvs/remove", [nvs](const JsonObject& request, JsonObject& response) {
+        std::string key = request["key"].as<std::string>();
+        LOGI("Removing NVS key '%s'", key.c_str());
+        response["key"] = key;
+        if (nvs->remove(key)) {
             response["removed"] = true;
         } else {
-            response["error"] = std::to_string(err);
+            response["error"] = "Key not found or could not be removed";
         }
     });
 }
 
-void registerHttpUpdateCommand(const std::shared_ptr<MqttRoot>& mqttRoot, const std::shared_ptr<FileSystem>& fs) {
-    mqttRoot->registerCommand("update", [fs](const JsonObject& request, JsonObject& response) {
+void registerHttpUpdateCommand(const std::shared_ptr<MqttRoot>& mqttRoot, const std::shared_ptr<NvsStore>& nvs) {
+    mqttRoot->registerCommand("update", [nvs](const JsonObject& request, JsonObject& response) {
         if (!request["url"].is<std::string>()) {
             response["failure"] = "Command contains no URL";
             return;
@@ -262,7 +257,7 @@ void registerHttpUpdateCommand(const std::shared_ptr<MqttRoot>& mqttRoot, const 
             response["failure"] = "Command contains empty url";
             return;
         }
-        HttpUpdater::startUpdate(url, fs);
+        HttpUpdater::startUpdate(url, nvs);
         response["success"] = true;
     });
 }
@@ -349,9 +344,15 @@ static void startDevice() {
 
     auto deviceDefinition = std::make_shared<TDeviceDefinition>();
 
-    auto configFs = std::make_shared<FileSystem>(CONFIG_PARTITION);
+    auto nvs = std::make_shared<NvsStore>("config");
 
-    auto settings = loadConfig<TDeviceSettings>(configFs, "/device-config.json");
+    LOGD("NVS configurations:");
+    nvs->list([](const std::string& key) {
+        LOGD(" - %s", key.c_str());
+    });
+
+    auto networkConfig = loadConfigFromNvs<NetworkConfig>(nvs, "network-config");
+    auto settings = loadConfigFromNvs<TDeviceSettings>(nvs, "device-config");
 
     auto watchdog = initWatchdog(settings->watchdogTimeout.get());
 
@@ -377,8 +378,8 @@ static void startDevice() {
     LOGI("Initializing FarmHub kernel version %s on %s instance '%s' with hostname '%s' and MAC address %s",
         farmhubVersion,
         settings->model.get().c_str(),
-        settings->instance.get().c_str(),
-        settings->getHostname().c_str(),
+        networkConfig->instance.get().c_str(),
+        networkConfig->getHostname().c_str(),
         getMacAddress().c_str());
 
     auto statusLed = std::make_shared<LedDriver>("status", deviceDefinition->statusPin);
@@ -390,7 +391,7 @@ static void startDevice() {
         states->networkConnecting,
         states->networkReady,
         states->configPortalRunning,
-        settings->getHostname());
+        networkConfig->getHostname());
 
     auto telemetryPublishQueue = std::make_shared<CopyQueue<bool>>("telemetry-publish", 1);
     auto telemetryPublisher = std::make_shared<TelemetryPublisher>(telemetryPublishQueue);
@@ -400,14 +401,14 @@ static void startDevice() {
     switches->registerSwitch({ .name = "factory-reset",
         .pin = deviceDefinition->bootPin,
         .mode = SwitchMode::PullUp,
-        .onDisengaged = [statusLed, telemetryPublisher](const SwitchEvent& event) {
+        .onDisengaged = [statusLed, nvs, telemetryPublisher](const SwitchEvent& event) {
             auto duration = event.timeSinceLastChange;
             if (duration >= 15s) {
                 LOGI("Factory reset triggered after %lld ms", duration.count());
-                performFactoryReset(statusLed, true);
+                performFactoryReset(statusLed, nvs, true);
             } else if (duration >= 5s) {
                 LOGI("WiFi reset triggered after %lld ms", duration.count());
-                performFactoryReset(statusLed, false);
+                performFactoryReset(statusLed, nvs, false);
             } else if (duration >= 200ms) {
                 LOGD("Publishing telemetry after %lld ms", duration.count());
                 telemetryPublisher->requestTelemetryPublishing();
@@ -429,20 +430,20 @@ static void startDevice() {
 #endif
 
     // Init real time clock
-    auto rtc = std::make_shared<RtcDriver>(wifi->getNetworkReady(), settings->ntp.get(), states->rtcInSync);
+    auto rtc = std::make_shared<RtcDriver>(wifi->getNetworkReady(), networkConfig->ntp.get(), states->rtcInSync);
 
     // Init MQTT connection
-    auto mqttConfig = loadConfig<MqttDriver::Config>(configFs, "/mqtt-config.json");
-    auto mqttRoot = initMqtt(states, mqttConfig, settings->instance.get(), settings->location.get());
+    auto mqttRoot = initMqtt(states, networkConfig, states->mqttReady);
     MqttLog::init(settings->publishLogs.get(), logRecords, mqttRoot);
     registerBasicCommands(mqttRoot);
-    registerFileCommands(mqttRoot, configFs);
+    registerNvsCommands(mqttRoot, nvs);
 
     // Handle any pending HTTP update (will reboot if update was required and was successful)
-    registerHttpUpdateCommand(mqttRoot, configFs);
-    HttpUpdater::performPendingHttpUpdateIfNecessary(configFs, wifi, watchdog);
+    registerHttpUpdateCommand(mqttRoot, nvs);
+    HttpUpdater::performPendingHttpUpdateIfNecessary(nvs, wifi, watchdog);
 
     auto pcnt = std::make_shared<PcntManager>();
+    auto peripheralsNvs = std::make_shared<NvsStore>("perf-state");
     auto pulseCounterManager = std::make_shared<PulseCounterManager>();
     auto pwm = std::make_shared<PwmManager>();
     auto telemetryCollector = std::make_shared<TelemetryCollector>();
@@ -450,6 +451,7 @@ static void startDevice() {
     // Init peripherals
     auto peripheralServices = PeripheralServices {
         .i2c = i2c,
+        .nvs = peripheralsNvs,
         .pcntManager = pcnt,
         .pulseCounterManager = pulseCounterManager,
         .pwmManager = pwm,
@@ -467,7 +469,8 @@ static void startDevice() {
         .telemetryPublisher = telemetryPublisher,
         .peripherals = peripheralManager,
     };
-    auto functionManager = std::make_shared<FunctionManager>(configFs, functionServices, mqttRoot);
+    auto functionsConfigNvs = std::make_shared<NvsStore>("function-cfg");
+    auto functionManager = std::make_shared<FunctionManager>(functionsConfigNvs, functionServices, mqttRoot);
     shutdownManager->registerShutdownListener([functionManager]() {
         functionManager->shutdown();
     });
@@ -524,9 +527,9 @@ static void startDevice() {
 
     mqttRoot->publish(
         "init",
-        [settings, initState, peripheralsInitJson, functionsInitJson, powerManager](JsonObject& json) {
+        [settings, networkConfig, initState, peripheralsInitJson, functionsInitJson, powerManager](JsonObject& json) {
             json["model"] = settings->model.get();
-            json["instance"] = settings->instance.get();
+            json["instance"] = networkConfig->instance.get();
             json["mac"] = getMacAddress();
             auto device = json["settings"].to<JsonObject>();
             settings->store(device);
@@ -555,8 +558,8 @@ static void startDevice() {
         duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count() / 1000.0,
         farmhubVersion,
         settings->model.get().c_str(),
-        settings->instance.get().c_str(),
-        settings->getHostname().c_str(),
+        networkConfig->instance.get().c_str(),
+        networkConfig->getHostname().c_str(),
         wifi->getIp().value_or("<no-ip>").c_str(),
         wifi->getSsid().value_or("<no-ssid>").c_str(),
         duration_cast<seconds>(system_clock::now().time_since_epoch()).count());

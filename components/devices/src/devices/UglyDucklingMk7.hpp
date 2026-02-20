@@ -1,6 +1,5 @@
 #pragma once
 
-#include <FileSystem.hpp>
 #include <Pin.hpp>
 #include <drivers/Bq27220Driver.hpp>
 #include <drivers/Drv8833Driver.hpp>

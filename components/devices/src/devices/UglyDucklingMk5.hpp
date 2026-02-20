@@ -1,6 +1,5 @@
 #pragma once
 
-#include <FileSystem.hpp>
 #include <Pin.hpp>
 #include <drivers/BatteryDriver.hpp>
 #include <drivers/Drv8874Driver.hpp>

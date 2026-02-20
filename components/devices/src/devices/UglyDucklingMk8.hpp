@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include <FileSystem.hpp>
 #include <MacAddress.hpp>
 #include <Pin.hpp>
 #include <drivers/Bq27220Driver.hpp>

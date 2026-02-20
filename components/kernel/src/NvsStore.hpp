@@ -1,6 +1,8 @@
 #pragma once
 
 #include <functional>
+#include <string>
+#include <vector>
 
 #include <nvs.h>
 #include <nvs_flash.h>
@@ -17,8 +19,8 @@ LOGGING_TAG(NVS, "nvs")
  */
 class NvsStore {
 public:
-    NvsStore(const std::string& name)
-        : name(name) {
+    NvsStore(const std::string& ns)
+        : ns(ns) {
     }
 
     bool contains(const std::string& key) {
@@ -28,7 +30,7 @@ public:
     bool contains(const char* key) {
         return withPreferences(true, [&](nvs_handle_t handle) {
             size_t length = 0;
-            esp_err_t err = nvs_get_str(handle, key, nullptr, &length);
+            esp_err_t err = nvs_get_blob(handle, key, nullptr, &length);
             switch (err) {
                 case ESP_OK:
                 case ESP_ERR_NVS_NOT_FOUND:
@@ -48,33 +50,12 @@ public:
 
     template <typename T>
     bool get(const char* key, T& value) {
-        return withPreferences(true, [&](nvs_handle_t handle) {
-            size_t length = 0;
-            esp_err_t err = nvs_get_str(handle, key, nullptr, &length);
-            if (err != ESP_OK) {
-                LOGTV(NVS, "get(%s) = failed to read length: %s", key, esp_err_to_name(err));
-                return err;
-            }
-
-            std::string json(length, '\0');
-            err = nvs_get_str(handle, key, json.data(), &length);
-            if (err != ESP_OK) {
-                LOGTE(NVS, "get(%s) = failed to read data: %s", key, esp_err_to_name(err));
-                return err;
-            }
-
-            LOGTV(NVS, "get(%s) = %s", key, json.c_str());
-
-            JsonDocument jsonDocument;
-            DeserializationError jsonError = deserializeJson(jsonDocument, json);
-            if (jsonError) {
-                LOGTE(NVS, "get(%s) = invalid JSON: %s", key, jsonError.c_str());
-                return ESP_FAIL;
-            }
-
-            value = jsonDocument.as<T>();
-            return ESP_OK;
-        }) == ESP_OK;
+        JsonDocument doc;
+        if (!getJson(key, doc)) {
+            return false;
+        }
+        value = doc.as<T>();
+        return true;
     }
 
     template <typename T>
@@ -84,22 +65,9 @@ public:
 
     template <typename T>
     bool set(const char* key, const T& value) {
-        return withPreferences(false, [&](nvs_handle_t handle) {
-            JsonDocument jsonDocument;
-            jsonDocument.set(value);
-            std::string jsonString;
-            serializeJson(jsonDocument, jsonString);
-
-            LOGTV(NVS, "set(%s) = %s", key, jsonString.c_str());
-
-            esp_err_t err = nvs_set_str(handle, key, jsonString.c_str());
-            if (err != ESP_OK) {
-                LOGTE(NVS, "set(%s) = failed to write: %s", key, esp_err_to_name(err));
-                return err;
-            }
-
-            return nvs_commit(handle);
-        }) == ESP_OK;
+        JsonDocument doc;
+        doc.set(value);
+        return setJson(key, doc.as<JsonVariantConst>());
     }
 
     bool remove(const std::string& key) {
@@ -114,29 +82,108 @@ public:
                 LOGTE(NVS, "remove(%s) = cannot delete: %s", key, esp_err_to_name(err));
                 return err;
             }
-
             return nvs_commit(handle);
         }) == ESP_OK;
+    }
+
+    bool getJson(const std::string& key, JsonDocument& doc) {
+        return getJson(key.c_str(), doc);
+    }
+
+    bool getJson(const char* key, JsonDocument& doc) {
+        return withPreferences(true, [&](nvs_handle_t handle) -> esp_err_t {
+            size_t length = 0;
+            esp_err_t err = nvs_get_blob(handle, key, nullptr, &length);
+            if (err != ESP_OK) {
+                LOGTV(NVS, "getJson(%s) = not found: %s", key, esp_err_to_name(err));
+                return err;
+            }
+            std::vector<char> buffer(length);
+            err = nvs_get_blob(handle, key, buffer.data(), &length);
+            if (err != ESP_OK) {
+                LOGTE(NVS, "getJson(%s) = failed to read: %s", key, esp_err_to_name(err));
+                return err;
+            }
+            DeserializationError jsonError = deserializeJson(doc, buffer.data(), length);
+            if (jsonError) {
+                LOGTE(NVS, "getJson(%s) = invalid JSON: %s", key, jsonError.c_str());
+                return ESP_FAIL;
+            }
+            LOGTV(NVS, "getJson(%s) = OK", key);
+            return ESP_OK;
+        }) == ESP_OK;
+    }
+
+    bool setJson(const std::string& key, const JsonVariantConst& value) {
+        return setJson(key.c_str(), value);
+    }
+
+    bool setJson(const char* key, const JsonVariantConst& value) {
+        return withPreferences(false, [&](nvs_handle_t handle) -> esp_err_t {
+            size_t size = measureJson(value);
+            // +1 for null terminator written by serializeJson
+            std::vector<char> buffer(size + 1);
+            serializeJson(value, buffer.data(), buffer.size());
+            LOGTV(NVS, "setJson(%s) = %s", key, buffer.data());
+            esp_err_t err = nvs_set_blob(handle, key, buffer.data(), size);
+            if (err != ESP_OK) {
+                LOGTE(NVS, "setJson(%s) = failed to write: %s", key, esp_err_to_name(err));
+                return err;
+            }
+            return nvs_commit(handle);
+        }) == ESP_OK;
+    }
+
+    /**
+     * @brief Erases all entries in this namespace.
+     */
+    bool eraseAll() {
+        return withPreferences(false, [&](nvs_handle_t handle) {
+            LOGTV(NVS, "eraseAll()");
+            esp_err_t err = nvs_erase_all(handle);
+            if (err != ESP_OK) {
+                LOGTE(NVS, "eraseAll() = failed: %s", esp_err_to_name(err));
+                return err;
+            }
+            return nvs_commit(handle);
+        }) == ESP_OK;
+    }
+
+    /**
+     * @brief Enumerates all keys in this namespace.
+     */
+    void list(const std::function<void(const std::string&)>& callback) {
+        nvs_iterator_t it = nullptr;
+        esp_err_t err = nvs_entry_find(NVS_DEFAULT_PART_NAME, ns.c_str(), NVS_TYPE_ANY, &it);
+        while (err == ESP_OK) {
+            nvs_entry_info_t info;
+            nvs_entry_info(it, &info);
+            if (std::string(info.namespace_name) == ns) {
+                callback(info.key);
+            }
+            err = nvs_entry_next(&it);
+        }
+        nvs_release_iterator(it);
     }
 
 private:
     esp_err_t withPreferences(bool readOnly, const std::function<esp_err_t(nvs_handle_t)>& action) {
         Lock lock(preferencesMutex);
-        LOGTV(NVS, "%s '%s'", readOnly ? "read" : "write", name.c_str());
+        LOGTV(NVS, "%s '%s'", readOnly ? "read" : "write", ns.c_str());
 
         nvs_handle_t handle;
-        esp_err_t err = nvs_open(name.c_str(), readOnly ? NVS_READONLY : NVS_READWRITE, &handle);
+        esp_err_t err = nvs_open(ns.c_str(), readOnly ? NVS_READONLY : NVS_READWRITE, &handle);
         switch (err) {
             case ESP_OK:
                 break;
             case ESP_ERR_NVS_NOT_FOUND:
                 LOGTV(NVS, "namespace '%s' does not exist yet, nothing to read",
-                    name.c_str());
+                    ns.c_str());
                 return ESP_ERR_NOT_FOUND;
                 break;
             default:
                 LOGTW(NVS, "failed to open NVS to %s '%s': %s",
-                    readOnly ? "read" : "write", name.c_str(), esp_err_to_name(err));
+                    readOnly ? "read" : "write", ns.c_str(), esp_err_to_name(err));
                 break;
         }
 
@@ -144,12 +191,12 @@ private:
         nvs_close(handle);
 
         LOGTV(NVS, "finished %s '%s', result: %s",
-            readOnly ? "read" : "write", name.c_str(), esp_err_to_name(result));
+            readOnly ? "read" : "write", ns.c_str(), esp_err_to_name(result));
         return result;
     }
 
     Mutex preferencesMutex;
-    const std::string name;
+    const std::string ns;
 };
 
 }    // namespace farmhub::kernel
