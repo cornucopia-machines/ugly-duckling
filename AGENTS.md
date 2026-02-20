@@ -7,23 +7,7 @@
 - NVS config files live in `config/` (with templates in `config-templates/`); Wokwi diagrams in `wokwi/`; docs and examples in `docs/`; generated outputs in `build/`.
 - Helper scripts stay at repo root (e.g., `generate-clang-tidy-compile-db.py`, `lookup-backtrace.py`, `idf-docker.py`) and in `scripts/`; CI workflows mirror the local steps.
 
-## Configuration Storage
-
-Configuration is stored across several NVS namespaces:
-
-- `config` namespace: `device-config` (from `config/device-config.json`) and `network-config` (from `config/network-config.json`)
-- `function-cfg` namespace: Per-function persistent config under `<name>` (written via MQTT `functions/<name>/config` topic)
-- `perf-state` namespace: Per-peripheral persistent state under `<name>`
-- `pending-update` key in the `config` namespace: Pending OTA firmware update URL (written by the `update` command)
-
-## Build, Test, and Development Commands
-
-- Standard build: `idf.py build -DUD_GEN=MK8 [-DUD_DEBUG=1]` (set `IDF_TARGET` for the generation; `UD_DEBUG=1` for verbose logging).
-- Flash & monitor: `idf.py flash [-DFSUPLOAD=1]` to push firmware (+NVS config when set), then `idf.py monitor`.
-- Wokwi/sim builds: `idf.py -DUD_GEN=MK6 -DUD_DEBUG=0 -DFSUPLOAD=1 -DWOKWI=1 build` (keep `WOKWI_CLI_TOKEN` set for tests).
-- NVS config upload only: Build with `-DFSUPLOAD=1` then `esptool.py write_flash 0x18000 build/config.bin` (erases all NVS data including WiFi credentials).
-- Native unit tests: `cmake -S test/unit-tests -B test/unit-tests/build-native -G Ninja && cmake --build test/unit-tests/build-native && ./test/unit-tests/build-native/ugly-duckling-unit-tests`.
-- Embedded/e2e: from `test/embedded-tests` run `idf.py build` then `pytest --embedded-services idf,wokwi pytest_embedded-tests.py`; from `test/e2e-tests` build with `-DUD_GEN=MK6 -DUD_DEBUG=1 -DFSUPLOAD=1 -DWOKWI=1` before invoking Wokwi/pytest.
+See [README.md](README.md) for configuration storage layout, build, flash, and development commands.
 
 ## Coding Style & Naming Conventions
 
