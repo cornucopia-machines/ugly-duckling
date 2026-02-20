@@ -121,7 +121,7 @@ struct NetworkConfig : MqttDriver::Config {
     }
 };
 
-static void performFactoryReset(const std::shared_ptr<LedDriver>& statusLed, const std::shared_ptr<NvsStore>& nvs, bool completeReset) {
+static void performFactoryReset(const std::shared_ptr<LedDriver>& statusLed, bool completeReset) {
     LOGI("Performing factory reset");
 
     statusLed->turnOn();
@@ -217,7 +217,7 @@ void registerNvsCommands(const std::shared_ptr<MqttRoot>& mqttRoot, const std::s
         });
     });
     mqttRoot->registerCommand("nvs/read", [nvs](const JsonObject& request, JsonObject& response) {
-        std::string key = request["key"].as<std::string>();
+        auto key = request["key"].as<std::string>();
         LOGI("Reading NVS key '%s'", key.c_str());
         response["key"] = key;
         JsonDocument valueDoc;
@@ -228,14 +228,14 @@ void registerNvsCommands(const std::shared_ptr<MqttRoot>& mqttRoot, const std::s
         }
     });
     mqttRoot->registerCommand("nvs/write", [nvs](const JsonObject& request, JsonObject& response) {
-        std::string key = request["key"].as<std::string>();
+        auto key = request["key"].as<std::string>();
         LOGI("Writing NVS key '%s'", key.c_str());
         response["key"] = key;
         nvs->setJson(key, request["value"]);
         response["written"] = true;
     });
     mqttRoot->registerCommand("nvs/remove", [nvs](const JsonObject& request, JsonObject& response) {
-        std::string key = request["key"].as<std::string>();
+        auto key = request["key"].as<std::string>();
         LOGI("Removing NVS key '%s'", key.c_str());
         response["key"] = key;
         if (nvs->remove(key)) {
@@ -401,14 +401,14 @@ static void startDevice() {
     switches->registerSwitch({ .name = "factory-reset",
         .pin = deviceDefinition->bootPin,
         .mode = SwitchMode::PullUp,
-        .onDisengaged = [statusLed, nvs, telemetryPublisher](const SwitchEvent& event) {
+        .onDisengaged = [statusLed, telemetryPublisher](const SwitchEvent& event) {
             auto duration = event.timeSinceLastChange;
             if (duration >= 15s) {
                 LOGI("Factory reset triggered after %lld ms", duration.count());
-                performFactoryReset(statusLed, nvs, true);
+                performFactoryReset(statusLed, true);
             } else if (duration >= 5s) {
                 LOGI("WiFi reset triggered after %lld ms", duration.count());
-                performFactoryReset(statusLed, nvs, false);
+                performFactoryReset(statusLed, false);
             } else if (duration >= 200ms) {
                 LOGD("Publishing telemetry after %lld ms", duration.count());
                 telemetryPublisher->requestTelemetryPublishing();

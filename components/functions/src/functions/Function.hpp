@@ -1,8 +1,8 @@
 #pragma once
 
+#include <Manager.hpp>
 #include <NvsConfiguration.hpp>
 #include <NvsStore.hpp>
-#include <Manager.hpp>
 #include <Telemetry.hpp>
 
 #include <peripherals/Peripheral.hpp>
