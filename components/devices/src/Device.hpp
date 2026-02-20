@@ -208,37 +208,45 @@ void registerBasicCommands(const std::shared_ptr<MqttRoot>& mqttRoot) {
     });
 }
 
-void registerNvsCommands(const std::shared_ptr<MqttRoot>& mqttRoot, const std::shared_ptr<NvsStore>& nvs) {
-    mqttRoot->registerCommand("nvs/list", [nvs](const JsonObject&, JsonObject& response) {
+void registerNvsCommands(const std::shared_ptr<MqttRoot>& mqttRoot) {
+    mqttRoot->registerCommand("nvs/list", [](const JsonObject& request, JsonObject& response) {
+        const char* ns = request["namespace"] | "config";
+        NvsStore store(ns);
         JsonArray entries = response["entries"].to<JsonArray>();
-        nvs->list([entries](const std::string& key) {
+        store.list([entries](const std::string& key) {
             auto entry = entries.add<JsonObject>();
             entry["key"] = key;
         });
     });
-    mqttRoot->registerCommand("nvs/read", [nvs](const JsonObject& request, JsonObject& response) {
+    mqttRoot->registerCommand("nvs/read", [](const JsonObject& request, JsonObject& response) {
+        const char* ns = request["namespace"] | "config";
+        NvsStore store(ns);
         auto key = request["key"].as<std::string>();
-        LOGI("Reading NVS key '%s'", key.c_str());
+        LOGI("Reading NVS key '%s' from namespace '%s'", key.c_str(), ns);
         response["key"] = key;
         JsonDocument valueDoc;
-        if (nvs->getJson(key, valueDoc)) {
+        if (store.getJson(key, valueDoc)) {
             response["value"].set(valueDoc.as<JsonVariant>());
         } else {
             response["error"] = "Key not found";
         }
     });
-    mqttRoot->registerCommand("nvs/write", [nvs](const JsonObject& request, JsonObject& response) {
+    mqttRoot->registerCommand("nvs/write", [](const JsonObject& request, JsonObject& response) {
+        const char* ns = request["namespace"] | "config";
+        NvsStore store(ns);
         auto key = request["key"].as<std::string>();
-        LOGI("Writing NVS key '%s'", key.c_str());
+        LOGI("Writing NVS key '%s' to namespace '%s'", key.c_str(), ns);
         response["key"] = key;
-        nvs->setJson(key, request["value"]);
+        store.setJson(key, request["value"]);
         response["written"] = true;
     });
-    mqttRoot->registerCommand("nvs/remove", [nvs](const JsonObject& request, JsonObject& response) {
+    mqttRoot->registerCommand("nvs/remove", [](const JsonObject& request, JsonObject& response) {
+        const char* ns = request["namespace"] | "config";
+        NvsStore store(ns);
         auto key = request["key"].as<std::string>();
-        LOGI("Removing NVS key '%s'", key.c_str());
+        LOGI("Removing NVS key '%s' from namespace '%s'", key.c_str(), ns);
         response["key"] = key;
-        if (nvs->remove(key)) {
+        if (store.remove(key)) {
             response["removed"] = true;
         } else {
             response["error"] = "Key not found or could not be removed";
@@ -436,7 +444,7 @@ static void startDevice() {
     auto mqttRoot = initMqtt(states, networkConfig, states->mqttReady);
     MqttLog::init(settings->publishLogs.get(), logRecords, mqttRoot);
     registerBasicCommands(mqttRoot);
-    registerNvsCommands(mqttRoot, nvs);
+    registerNvsCommands(mqttRoot);
 
     // Handle any pending HTTP update (will reboot if update was required and was successful)
     registerHttpUpdateCommand(mqttRoot, nvs);
