@@ -8,14 +8,13 @@
 #include <nvs_flash.h>
 
 #include <ArduinoJson.h>
-#include <Concurrent.hpp>
 
 namespace farmhub::kernel {
 
 LOGGING_TAG(NVS, "nvs")
 
 /**
- * @brief Thread-safe NVS store for JSON serializable objects.
+ * @brief NVS store for JSON serializable objects.
  */
 class NvsStore {
 public:
@@ -168,7 +167,6 @@ public:
 
 private:
     esp_err_t withPreferences(bool readOnly, const std::function<esp_err_t(nvs_handle_t)>& action) {
-        Lock lock(preferencesMutex);
         LOGTV(NVS, "%s '%s'", readOnly ? "read" : "write", ns.c_str());
 
         nvs_handle_t handle;
@@ -195,7 +193,6 @@ private:
         return result;
     }
 
-    Mutex preferencesMutex;
     const std::string ns;
 };
 
