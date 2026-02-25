@@ -1,6 +1,4 @@
 {
-  "instance": "test-mk8-xxx",
-  "location": "area-51",
   "peripherals": [
     {
       "name": "flow-meter",

@@ -8,8 +8,8 @@
 #include <esp_http_client.h>
 #include <esp_https_ota.h>
 
-#include <FileSystem.hpp>
 #include <Log.hpp>
+#include <NvsStore.hpp>
 #include <Watchdog.hpp>
 #include <drivers/WiFiDriver.hpp>
 #include <utility>
@@ -20,12 +20,8 @@ LOGGING_TAG(UPDATE, "update")
 
 class HttpUpdater {
 public:
-    static void startUpdate(const std::string& url, const std::shared_ptr<FileSystem>& fs) {
-        JsonDocument doc;
-        doc["url"] = url;
-        std::string content;
-        serializeJson(doc, content);
-        fs->writeAll(HttpUpdater::UPDATE_FILE, content);
+    static void startUpdate(const std::string& url, const std::shared_ptr<NvsStore>& nvs) {
+        nvs->set(HttpUpdater::UPDATE_KEY, url);
         Task::run("update", 3072, [](Task& /*task*/) {
             LOGTI(UPDATE, "Restarting in 5 seconds to apply update");
             Task::delay(5s);
@@ -33,33 +29,22 @@ public:
         });
     }
 
-    static void performPendingHttpUpdateIfNecessary(const std::shared_ptr<FileSystem>& fs, const std::shared_ptr<WiFiDriver>& wifi, std::shared_ptr<Watchdog> watchdog) {
+    static void performPendingHttpUpdateIfNecessary(const std::shared_ptr<NvsStore>& nvs, const std::shared_ptr<WiFiDriver>& wifi, std::shared_ptr<Watchdog> watchdog) {
         // Do we need to update?
-        if (!fs->exists(UPDATE_FILE)) {
-            LOGTV(UPDATE, "No update file found, not updating");
+        if (!nvs->contains(UPDATE_KEY)) {
+            LOGTV(UPDATE, "No pending update found, not updating");
             return;
         }
 
-        auto contents = fs->readAll(UPDATE_FILE);
-        if (!contents.has_value()) {
-            LOGTE(UPDATE, "Failed to read update file");
-            return;
-        }
-        JsonDocument doc;
-        auto error = deserializeJson(doc, contents.value());
-        int deleteError = fs->remove(UPDATE_FILE);
-        if (deleteError != 0) {
-            LOGTE(UPDATE, "Failed to delete update file");
+        std::string url;
+        if (!nvs->get<std::string>(UPDATE_KEY, url) || url.empty()) {
+            LOGTE(UPDATE, "Failed to read pending update URL");
+            nvs->remove(UPDATE_KEY);
             return;
         }
 
-        if (error) {
-            LOGTE(UPDATE, "Failed to parse update.json: %s", error.c_str());
-            return;
-        }
-        std::string url = doc["url"];
-        if (url.empty()) {
-            LOGTE(UPDATE, "Update command contains empty url");
+        if (!nvs->remove(UPDATE_KEY)) {
+            LOGTE(UPDATE, "Failed to delete pending update key");
             return;
         }
 
@@ -67,7 +52,7 @@ public:
         updater.performPendingHttpUpdate(url, wifi);
     }
 
-    static constexpr const char* UPDATE_FILE = "/update.json";
+    static constexpr const char* UPDATE_KEY = "pending-update";
 
 private:
     HttpUpdater(std::shared_ptr<Watchdog> watchdog)

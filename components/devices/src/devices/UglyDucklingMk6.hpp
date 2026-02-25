@@ -3,7 +3,6 @@
 #include <map>
 #include <memory>
 
-#include <FileSystem.hpp>
 #include <MacAddress.hpp>
 #include <Pin.hpp>
 #include <drivers/BatteryDriver.hpp>

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <ConfigurationFile.hpp>
-#include <FileSystem.hpp>
 #include <Manager.hpp>
+#include <NvsConfiguration.hpp>
+#include <NvsStore.hpp>
 #include <Telemetry.hpp>
 
 #include <peripherals/Peripheral.hpp>
@@ -29,7 +29,7 @@ struct FunctionInitParameters {
 
 using FunctionCreateFn = std::function<Handle(
     FunctionInitParameters& params,
-    const std::shared_ptr<FileSystem>& fs,
+    const std::shared_ptr<NvsStore>& nvs,
     const std::string& jsonSettings,
     JsonObject& initConfigJson)>;
 using FunctionFactory = kernel::Factory<FunctionCreateFn>;
@@ -52,7 +52,7 @@ FunctionFactory makeFunctionFactory(
         .productType = std::move(type),
         .create = [settingsTuple, makeImpl = std::move(makeImpl)](
                       FunctionInitParameters& params,
-                      const std::shared_ptr<FileSystem>& fs,
+                      const std::shared_ptr<NvsStore>& nvs,
                       const std::string& jsonSettings,
                       JsonObject& initConfigJson) -> Handle {
             // Construct and load settings
@@ -67,9 +67,9 @@ FunctionFactory makeFunctionFactory(
             // We load configuration up front to ensure that we always store it in the init message, even
             // when the instantiation of the function fails later.
             auto config = std::make_shared<TConfig>();
-            std::shared_ptr<ConfigurationFile<TConfig>> configFile;
+            std::shared_ptr<NvsConfiguration<TConfig>> nvsConfig;
             if constexpr (hasConfig) {
-                configFile = std::make_shared<ConfigurationFile<TConfig>>(fs, "/f/" + params.name, config);
+                nvsConfig = std::make_shared<NvsConfiguration<TConfig>>(nvs, params.name, config);
                 // Store configuration in init message
                 config->store(initConfigJson);
             }
@@ -82,12 +82,12 @@ FunctionFactory makeFunctionFactory(
                 std::static_pointer_cast<HasConfig<TConfig>>(impl)->configure(config);
 
                 // Subscribe for config updates
-                params.mqttRoot->subscribe("config", [name = params.name, configFile, impl](const std::string&, const JsonObject& cfgJson) {
+                params.mqttRoot->subscribe("config", [name = params.name, nvsConfig, impl](const std::string&, const JsonObject& cfgJson) {
                     LOGD("Received configuration update for function: %s", name.c_str());
                     try {
-                        configFile->update(cfgJson);
+                        nvsConfig->update(cfgJson);
                         if constexpr (std::is_base_of_v<HasConfig<TConfig>, Impl>) {
-                            std::static_pointer_cast<HasConfig<TConfig>>(impl)->configure(configFile->getConfig());
+                            std::static_pointer_cast<HasConfig<TConfig>>(impl)->configure(nvsConfig->getConfig());
                         }
                     } catch (const std::exception& e) {
                         LOGE("Failed to update configuration for function '%s' because %s", name.c_str(), e.what());
@@ -103,10 +103,10 @@ FunctionFactory makeFunctionFactory(
 class FunctionManager final {
 public:
     FunctionManager(
-        const std::shared_ptr<FileSystem>& fs,
+        const std::shared_ptr<NvsStore>& nvs,
         const FunctionServices& services,
         const std::shared_ptr<MqttRoot>& mqttDeviceRoot)
-        : fs(fs)
+        : nvs(nvs)
         , services(services)
         , mqttDeviceRoot(mqttDeviceRoot)
         , manager("function") {
@@ -125,7 +125,7 @@ public:
                         .mqttRoot = mqttDeviceRoot->forSuffix("functions/" + name),
                     };
                     JsonObject initConfigJson = initJson["config"].to<JsonObject>();
-                    return factory.create(params, fs, settings, initConfigJson);
+                    return factory.create(params, nvs, settings, initConfigJson);
                 });
             return true;
         } catch (const std::exception& e) {
@@ -145,7 +145,7 @@ public:
     }
 
 private:
-    const std::shared_ptr<FileSystem>& fs;
+    const std::shared_ptr<NvsStore> nvs;
     const FunctionServices services;
     const std::shared_ptr<MqttRoot>& mqttDeviceRoot;
 

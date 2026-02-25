@@ -38,7 +38,8 @@ inline PeripheralFactory makeFactory(
             auto strategy = settings->createValveControlStrategy(motors, settings->motor.get());
             auto valve = std::make_shared<Valve>(
                 params.name,
-                std::move(strategy));
+                std::move(strategy),
+                params.services.nvs);
 
             params.registerFeature("valve", [valve](JsonObject& telemetry) {
                 valve->populateTelemetry(telemetry);

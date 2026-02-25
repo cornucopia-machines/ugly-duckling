@@ -8,25 +8,31 @@ The devices are built around the Espressif ESP32 micro-controller using the ESP-
 The devices can report telemetry to, and receive configuration and commands from the FarmHub server via MQTT over WiFi.
 They can also receive firmware updates via HTTP(S).
 
-Devices are identified by a location (denoting teh installation site) and a unique instance name.
+Devices are identified by a location (denoting the installation site) and a unique instance name.
 Devices can have multiple peripherals, such as sensors, actuators, and displays.
 Each peripheral is identified by its type and a name that is unique within the device.
 
-## MQTT configuration
+## Network configuration
 
-The MQTT configuration is stored in `mqtt-config.json` in the root of the SPIFFS file system:
+Network configuration is stored under the `network-config` key in NVS (the `config` namespace).
+It includes both the device identity and the MQTT broker settings:
 
 ```jsonc
 {
-  "host": "...", // broker host name
-  "port": 1883, // broker port, defaults to 1883
+  "instance": "chicken-door", // the instance name, defaults to MAC address
+  "location": "my-farm",      // the name of the location the device is installed at
+  "host": "...",              // broker host name
+  "port": 1883,               // broker port, defaults to 1883
   "clientId": "chicken-door", // client ID, defaults to "ugly-duckling-$instance" if omitted
-  "queueSize": 16 // MQTT message queue size, defaults to 16
+  "queueSize": 16,            // MQTT message queue size, defaults to 16
+  "ntp": {
+    "host": "pool.ntp.org"    // NTP server host name, optional
+  }
 }
 ```
 
 Ugly Duckling supports TLS-encrypted MQTT connections using client-side certificates.
-To enable this, the following parameters must be present in the `mqtt-config.json` file:
+To enable this, the following parameters must be present in the network config:
 
 ```jsonc
 {
@@ -53,16 +59,11 @@ The certificates and keys must be in Base64 encoded PEM format, each line must b
 
 ## Device configuration
 
-Configuration about the hardware itself is stored in `device-config.json` in the root of the SPIFFS file system.
-This describes the device and its peripherals.
+Hardware configuration is stored under the `device-config` key in NVS (the `config` namespace).
+This describes the device peripherals and functions.
 
 ```jsonc
 {
-    "instance": "chicken-door", // the instance name, mandatory
-    "location": "my-farm", // the name of the location the device is installed at, mandatory
-    "ntp": {
-        "host": "pool.ntp.org", // NTP server host name, optional
-    },
     "peripherals": [
       {
         "type": "chicken-door",
@@ -90,7 +91,7 @@ Peripherals communicate using the topic `$DEVICE_ROOT/peripheral/$PERIPHERAL_NAM
 
 Some peripherals can receive custom configurations, for example, a flow controller can have a custom schedule.
 These are communicated via MQTT under the `$PERIPHERAL_NAME/config` topic.
-Once the device receives such configuration, it stores it under `/p/$PERIPHERAL_NAME.json` in the SPIFFS file system.
+Once the device receives such configuration, it stores it under the `$FUNCTION_NAME` key in the `function-cfg` NVS namespace.
 
 ## Remote commands
 
@@ -127,16 +128,14 @@ Sending a message to `$DEVICE_ROOT/commands/update` with a URL to a firmware bin
 
 See `HttpUpdateCommand` for more information.
 
-### File commands
+### NVS commands
 
-The following commands are available to manipulate files on the device via SPIFFS:
+The following commands are available to manage NVS entries on the device:
 
-- `commands/files/list` returns a list of the files
-- `commands/files/read` reads a file at the given `path`
-- `commands/files/write` writes the given `contents` to a file at the given `path`
-- `commands/files/remove` removes the file at the given `path`
-
-See `FileCommands` for more information.
+- `commands/nvs/list` returns a list of keys in the `config` namespace
+- `commands/nvs/read` reads the value at the given `key`
+- `commands/nvs/write` writes the given `value` to the given `key`
+- `commands/nvs/remove` removes the entry at the given `key`
 
 ## Development
 
@@ -169,18 +168,31 @@ idf.py build -DUD_GEN=MK7 -DUD_DEBUG=1
 idf.py flash
 ```
 
-If you also want to upload the SPIFFS image with the firmware, add `-DFSUPLOAD=1` to the command:
+If you also want to upload the NVS config partition with the firmware, add `-DFSUPLOAD=1` to the command:
 
 ```bash
 idf.py -DFSUPLOAD=1 flash
 ```
 
+> **Note:** Flashing the NVS partition will erase all NVS data on the device, including WiFi credentials.
+> This is intended for initial device setup or reconfiguration.
+
 #### Uploading just config
 
-To upload only the SPIFFS image:
+To upload only the NVS config partition (generated from `config/device-config.json` and `config/network-config.json`):
 
 ```bash
-mkspiffs -c config -s 0x30000 build/config.bin; esptool write_flash 0x3D0000 build/config.bin
+idf.py -DFSUPLOAD=1 build
+esptool.py write_flash 0x18000 build/config.bin
+```
+
+Alternatively, use the NVS commands over MQTT to update individual keys without erasing the device:
+
+```bash
+# Write device config
+mosquitto_pub -t "$DEVICE_ROOT/commands/nvs/write" -m '{"key":"device-config","value":{...}}'
+# Write network config
+mosquitto_pub -t "$DEVICE_ROOT/commands/nvs/write" -m '{"key":"network-config","value":{...}}'
 ```
 
 ### Monitoring
