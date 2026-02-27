@@ -17,6 +17,8 @@ sdkconfig*
 managed_components/
 dependencies*.lock
 
+eim_config.toml
+
 # Clang Tidy's output
 warnings.txt
 
