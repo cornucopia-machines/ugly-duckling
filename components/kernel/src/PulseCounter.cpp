@@ -1,7 +1,18 @@
 #include "PulseCounter.hpp"
 
+#include <cinttypes>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <stdexcept>
+#include <utility>
+
 #include <driver/gpio.h>
+#include <esp_err.h>
 #include <esp_pm.h>
+#include <hal/rtc_io_types.h>
+
+#include "Pin.hpp"
 
 #ifdef CONFIG_ULP_COPROC_ENABLED
 #include <driver/rtc_io.h>
@@ -15,8 +26,8 @@
 // channel_count → ulp_channel_count, gpio_num → ulp_gpio_num, etc.
 #include "ulp_pulse_counter.h"
 // Embedded ULP binary produced by CMake.
-extern const uint8_t ulp_pulse_counter_bin_start[] asm("_binary_ulp_pulse_counter_bin_start");
-extern const uint8_t ulp_pulse_counter_bin_end[]   asm("_binary_ulp_pulse_counter_bin_end");
+extern const uint8_t ulp_pulse_counter_bin_start[] asm("_binary_ulp_pulse_counter_bin_start"); // NOLINT(hicpp-no-assembler)
+extern const uint8_t ulp_pulse_counter_bin_end[]   asm("_binary_ulp_pulse_counter_bin_end");   // NOLINT(hicpp-no-assembler)
 #endif
 
 #include <EspException.hpp>
@@ -72,13 +83,12 @@ public:
 private:
     UlpPulseCounter(InternalPinPtr pin, uint32_t channelIndex)
         : pin(std::move(pin))
-        , channelIndex(channelIndex)
-        , lastSeen(0) {
+        , channelIndex(channelIndex) {
     }
 
     const InternalPinPtr pin;
     const uint32_t channelIndex;
-    uint32_t lastSeen;
+    uint32_t lastSeen = 0;
 
     friend class PulseCounterManager;
 };
@@ -142,7 +152,7 @@ std::shared_ptr<PulseCounter> PulseCounterManager::createUlp(const PulseCounterC
 
     uint32_t index = ulpNextChannel++;
 
-    uint32_t debounceUs = static_cast<uint32_t>(config.debounceTime.count());
+    auto debounceUs = static_cast<uint32_t>(config.debounceTime.count());
     ulp_gpio_num[index]    = static_cast<uint32_t>(gpio);
     ulp_debounce_us[index] = debounceUs;
     ulp_pulse_count[index] = 0;

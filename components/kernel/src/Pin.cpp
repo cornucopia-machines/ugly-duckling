@@ -1,5 +1,12 @@
 #include "Pin.hpp"
 
+#include <map>
+#include <string>
+#include <vector>
+
+#include <esp_adc/adc_oneshot.h>
+#include <hal/gpio_types.h>
+
 namespace farmhub::kernel {
 
 std::map<std::string, PinPtr> Pin::BY_NAME;
