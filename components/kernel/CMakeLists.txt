@@ -10,6 +10,7 @@ idf_component_register(
         esp_app_format
         esp_driver_gpio
         esp_driver_i2c
+        esp_driver_rtc_io
         esp_event
         esp_http_client
         esp_https_ota
@@ -20,6 +21,7 @@ idf_component_register(
         mbedtls
         mqtt
         nvs_flash
+        ulp
         wifi_provisioning
 
         # ESP-IDF-lib components
@@ -34,4 +36,13 @@ idf_component_register(
         # ArduinoJSON
         bblanchon__arduinojson
         kode_bq27220
+
+    WHOLE_ARCHIVE
 )
+
+set(ulp_app_name ulp_pulse_counter)
+set(ulp_sources "${CMAKE_CURRENT_LIST_DIR}/ulp/pulse_counter.c")
+set(ulp_exp_dep_srcs "src/drivers/MotorDriver.cpp" "src/State.cpp")
+
+include(${IDF_PATH}/components/ulp/cmake/IDFULPComponent.cmake)
+ulp_embed_binary(${ulp_app_name} "${ulp_sources}" "${ulp_exp_dep_srcs}")
