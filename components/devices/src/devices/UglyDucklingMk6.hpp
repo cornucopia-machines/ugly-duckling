@@ -30,10 +30,11 @@ public:
 
 class UglyDucklingMk6Base : public DeviceDefinition<Mk6Settings> {
 public:
-    UglyDucklingMk6Base()
+    explicit UglyDucklingMk6Base(int revision)
         : DeviceDefinition(
             InternalPin::registerPin("STATUS", GPIO_NUM_2),
-            InternalPin::registerPin("BOOT", GPIO_NUM_0)) {
+            InternalPin::registerPin("BOOT", GPIO_NUM_0),
+            revision) {
         // Switch off strapping pin
         // TODO(lptr): Add a LED driver instead
         LEDA_RED->pinMode(Pin::Mode::Output);
@@ -110,6 +111,9 @@ protected:
 
 // MAC prefix 0x34:0x85:0x18
 class UglyDucklingMk6Rev1 : public UglyDucklingMk6Base {
+public:
+    UglyDucklingMk6Rev1() : UglyDucklingMk6Base(1) {}
+
 protected:
     PinPtr motorNSleepPin() const override {
         return IOC2;
@@ -118,6 +122,9 @@ protected:
 
 // MAC prefix 0xec:0xda:0x3b:0x5b
 class UglyDucklingMk6Rev2 : public UglyDucklingMk6Base {
+public:
+    UglyDucklingMk6Rev2() : UglyDucklingMk6Base(2) {}
+
 protected:
     PinPtr motorNSleepPin() const override {
         return IOC2;
@@ -126,6 +133,9 @@ protected:
 
 // All other known MK6 MAC ranges
 class UglyDucklingMk6Rev3 : public UglyDucklingMk6Base {
+public:
+    UglyDucklingMk6Rev3() : UglyDucklingMk6Base(3) {}
+
 protected:
     PinPtr motorNSleepPin() const override {
         return LOADEN;

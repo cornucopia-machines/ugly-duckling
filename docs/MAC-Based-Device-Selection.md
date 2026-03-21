@@ -271,7 +271,28 @@ five per-generation files with two target files:
 `DeviceCommon.cmake` is updated to load `sdkconfig.{target}.defaults` instead of
 `sdkconfig.{ud_gen_lower}.defaults`.
 
-### Step 8 — Update Tests
+### Step 8 — Report Hardware Revision at Runtime
+
+Each `DeviceDefinition` subclass now carries a hardware revision number. The revision is
+surfaced in logs and the MQTT `init` message so operators can identify exactly which PCB
+revision is running without inspecting the MAC address manually.
+
+`DeviceDefinition` gains a `const int revision` member (default `1`) set via a constructor
+parameter. Each concrete class or abstract base passes its revision integer:
+
+| Class | Revision |
+|---|---|
+| `UglyDucklingMk5` | `2` |
+| `UglyDucklingMk6Rev1/2/3` | `1` / `2` / `3` |
+| `UglyDucklingMk7` | `1` (default) |
+| `UglyDucklingMk8Rev1/2` | `1` / `2` |
+| `UglyDucklingMkX` | `1` (default) |
+
+`startDevice()` builds a `modelWithRevision` string (e.g. `"mk6 (rev3)"`) used in both
+boot log messages. The MQTT `init` message gains a `"revision"` integer field alongside
+the existing `"model"` string field.
+
+### Step 9 — Update Tests
 
 - **Embedded tests**: Remove `UD_GEN` from the embedded test build if it was generation-specific.
 - **E2e tests**: The Wokwi e2e test already pins `UD_GEN=MK6`; no change needed.
@@ -299,3 +320,4 @@ The following information is needed before Step 5 can be fully implemented:
 4. Step 5 (MAC dispatch) — requires MAC range data from open question #1
 5. Step 6 (UD_GEN override + multi-device includes in `main.cpp`) — straightforward once step 5 is done
 6. Steps 7–8 (build/CI consolidation) — last, once runtime selection is proven correct
+7. Step 9 (revision reporting) — additive; can be done at any point after steps 2–3

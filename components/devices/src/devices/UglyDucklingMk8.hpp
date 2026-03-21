@@ -32,10 +32,11 @@ public:
 
 class UglyDucklingMk8Base : public DeviceDefinition<Mk8Settings> {
 public:
-    UglyDucklingMk8Base()
+    explicit UglyDucklingMk8Base(int revision)
         : DeviceDefinition(
             InternalPin::registerPin("STATUS", GPIO_NUM_45),
-            InternalPin::registerPin("BOOT", GPIO_NUM_0)) {
+            InternalPin::registerPin("BOOT", GPIO_NUM_0),
+            revision) {
         // Switch off strapping pin
         // TODO: Add a LED driver instead
         STATUS2->pinMode(Pin::Mode::Output);
@@ -121,6 +122,9 @@ protected:
 
 // MAC prefix 0x98:0xa3:0x16:0x1a — INA219 omitted due to hardware fault on these units
 class UglyDucklingMk8Rev1 : public UglyDucklingMk8Base {
+public:
+    UglyDucklingMk8Rev1() : UglyDucklingMk8Base(1) {}
+
 protected:
     void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<Mk8Settings>& /*settings*/) override {
         registerMotorAndValves(peripheralManager, services);
@@ -129,6 +133,8 @@ protected:
 
 // All other known MK8 MAC ranges — INA219 included
 class UglyDucklingMk8Rev2 : public UglyDucklingMk8Base {
+public:
+    UglyDucklingMk8Rev2() : UglyDucklingMk8Base(2) {}
 protected:
     void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<Mk8Settings>& /*settings*/) override {
         registerMotorAndValves(peripheralManager, services);

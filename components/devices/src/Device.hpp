@@ -361,6 +361,8 @@ static void startDevice() {
     auto networkConfig = loadConfigFromNvs<NetworkConfig>(configNvs, "network-config");
     auto settings = loadConfigFromNvs<TDeviceSettings>(configNvs, "device-config");
 
+    const std::string modelWithRevision = settings->model.get() + " (rev" + std::to_string(deviceDefinition->revision) + ")";
+
     auto watchdog = initWatchdog(settings->watchdogTimeout.get());
 
     auto powerManager = std::make_shared<PowerManager>(settings->sleepWhenIdle.get());
@@ -384,7 +386,7 @@ static void startDevice() {
         farmhubVersion);
     LOGI("Initializing FarmHub kernel version %s on %s instance '%s' with hostname '%s' and MAC address %s",
         farmhubVersion,
-        settings->model.get().c_str(),
+        modelWithRevision.c_str(),
         networkConfig->instance.get().c_str(),
         networkConfig->getHostname().c_str(),
         getMacAddress().c_str());
@@ -534,8 +536,9 @@ static void startDevice() {
 
     mqttRoot->publish(
         "init",
-        [settings, networkConfig, initState, peripheralsInitJson, functionsInitJson, powerManager](JsonObject& json) {
+        [settings, networkConfig, initState, peripheralsInitJson, functionsInitJson, powerManager, deviceDefinition](JsonObject& json) {
             json["model"] = settings->model.get();
+            json["revision"] = deviceDefinition->revision;
             json["instance"] = networkConfig->instance.get();
             json["mac"] = getMacAddress();
             auto device = json["settings"].to<JsonObject>();
@@ -564,7 +567,7 @@ static void startDevice() {
     LOGI("Device ready in %.2f s (kernel version %s on %s instance '%s' with hostname '%s' and IP '%s', SSID '%s', current time is %lld)",
         duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count() / 1000.0,
         farmhubVersion,
-        settings->model.get().c_str(),
+        modelWithRevision.c_str(),
         networkConfig->instance.get().c_str(),
         networkConfig->getHostname().c_str(),
         wifi->getIp().value_or("<no-ip>").c_str(),

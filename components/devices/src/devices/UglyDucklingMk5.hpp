@@ -29,7 +29,8 @@ public:
     UglyDucklingMk5()
         : DeviceDefinition(
             InternalPin::registerPin("STATUS", GPIO_NUM_2),
-            InternalPin::registerPin("BOOT", GPIO_NUM_0)) {
+            InternalPin::registerPin("BOOT", GPIO_NUM_0),
+            2) {
     }
 
 protected:
