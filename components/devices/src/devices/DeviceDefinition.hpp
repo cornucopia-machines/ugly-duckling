@@ -42,7 +42,7 @@ using namespace farmhub::peripherals;
 namespace farmhub::devices {
 
 #define UD_DEFINE_PIN3(GPIO, VAR, STR) \
-    static const InternalPinPtr VAR = InternalPin::registerPin(STR, GPIO);
+    const InternalPinPtr VAR = InternalPin::registerPin(STR, GPIO);
 
 #define UD_DEFINE_PIN2(GPIO, VAR) \
     UD_DEFINE_PIN3(GPIO, VAR, #VAR)
@@ -54,9 +54,10 @@ namespace farmhub::devices {
 template <std::derived_from<DeviceSettings> TDeviceSettings>
 class DeviceDefinition {
 public:
-    DeviceDefinition(PinPtr statusPin, InternalPinPtr bootPin)
+    DeviceDefinition(PinPtr statusPin, InternalPinPtr bootPin, int revision = 1)
         : statusPin(std::move(statusPin))
-        , bootPin(std::move(bootPin)) {
+        , bootPin(std::move(bootPin))
+        , revision(revision) {
     }
 
     virtual ~DeviceDefinition() = default;
@@ -98,12 +99,13 @@ public:
         return {};
     }
 
-    static std::shared_ptr<BatteryDriver> createBatteryDriver(const std::shared_ptr<I2CManager>& /*i2c*/) {
+    virtual std::shared_ptr<BatteryDriver> createBatteryDriver(const std::shared_ptr<I2CManager>& /*i2c*/) {
         return nullptr;
     }
 
     const PinPtr statusPin;
     const InternalPinPtr bootPin;
+    const int revision;
 
 protected:
     virtual void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<TDeviceSettings>& settings) {
