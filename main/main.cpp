@@ -2,8 +2,6 @@
 #include <cstdio>
 #endif
 
-#include <array>
-#include <cstdint>
 #include <cstdlib>
 
 #include <esp_log.h>
@@ -28,47 +26,39 @@ using namespace farmhub::kernel;
 #ifdef CONFIG_IDF_TARGET_ESP32S3
 namespace {
 void dispatchToDevice() {
-    // MK6 Rev1 — MAC prefix 0x34:0x85:0x18
-    if (macAddressMatchesAny(std::array<uint8_t, 3> { 0x34, 0x85, 0x18 })) {
-        startDevice<Mk6Settings, UglyDucklingMk6Rev1>();
-        return;
-    }
-
-    // MK6 Rev2 — MAC prefix 0xec:0xda:0x3b:0x5b
-    if (macAddressMatchesAny(std::array<uint8_t, 4> { 0xec, 0xda, 0x3b, 0x5b })) {
-        startDevice<Mk6Settings, UglyDucklingMk6Rev2>();
-        return;
-    }
-
-    // MK6 Rev3 — TODO: replace dummy ranges with actual production MAC ranges
-    if (macAddressMatchesAny(
-            std::array<uint8_t, 2> { 0xAA, 0x01 },
-            std::array<uint8_t, 3> { 0xAA, 0x02, 0x03 })) {
-        startDevice<Mk6Settings, UglyDucklingMk6Rev3>();
-        return;
-    }
-
-    // MK5 — TODO: replace dummy range with actual production MAC range
-    if (macAddressMatchesAny(std::array<uint8_t, 2> { 0xAA, 0x00 })) {
+    // MK5 Rev2
+    if (macAddressHasPrefix(0xF4, 0x12, 0xFA, 0x52)) {
         startDevice<Mk5Settings, UglyDucklingMk5>();
         return;
     }
 
-    // MK7 — TODO: replace dummy range with actual production MAC range
-    if (macAddressMatchesAny(std::array<uint8_t, 2> { 0xAA, 0x04 })) {
+    // MK6 Rev1
+    if (macAddressHasPrefix(0x34, 0x85, 0x18)) {
+        startDevice<Mk6Settings, UglyDucklingMk6Rev1>();
+        return;
+    }
+
+    // MK6 Rev2
+    if (macAddressHasPrefix(0xEC, 0xDA, 0x3B, 0x5B)) {
+        startDevice<Mk6Settings, UglyDucklingMk6Rev2>();
+        return;
+    }
+
+    // MK6 Rev3
+    if (macAddressHasPrefix(0x98, 0xA3, 0x16, 0x1A)) {
+        startDevice<Mk6Settings, UglyDucklingMk6Rev3>();
+        return;
+    }
+
+    // MK7 Rev1
+    if (macAddressHasPrefix(0x48, 0x27, 0xE2, 0x82)) {
         startDevice<Mk7Settings, UglyDucklingMk7>();
         return;
     }
 
-    // MK8 Rev1 — MAC prefix 0x98:0xa3:0x16:0x1a
-    if (macAddressMatchesAny(std::array<uint8_t, 4> { 0x98, 0xa3, 0x16, 0x1a })) {
+    // MK8 Rev1
+    if (macAddressHasPrefix(0x98, 0xA3, 0x16, 0x1A)) {
         startDevice<Mk8Settings, UglyDucklingMk8Rev1>();
-        return;
-    }
-
-    // MK8 Rev2 — TODO: replace dummy range with actual production MAC range
-    if (macAddressMatchesAny(std::array<uint8_t, 2> { 0xAA, 0x05 })) {
-        startDevice<Mk8Settings, UglyDucklingMk8Rev2>();
         return;
     }
 
@@ -81,8 +71,8 @@ void dispatchToDevice() {
 #ifdef CONFIG_IDF_TARGET_ESP32C6
 namespace {
 void dispatchToDevice() {
-    // MKX — TODO: replace dummy range with actual production MAC range
-    if (macAddressMatchesAny(std::array<uint8_t, 2> { 0xAA, 0x10 })) {
+    // MKX — TODO: add actual production MAC range
+    if (macAddressHasPrefix()) {
         startDevice<MkXSettings, UglyDucklingMkX>();
         return;
     }

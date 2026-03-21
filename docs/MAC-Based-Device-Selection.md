@@ -96,29 +96,25 @@ UglyDucklingMk8Base   (abstract — all MK8 pins as members, battery driver, sha
 
 `Mk8Settings::disableIna219` is removed.
 
-### Step 4 — Replace `macAddressStartsWith` with `macAddressMatchesAny`
+### Step 4 — Replace `macAddressStartsWith` with `macAddressHasPrefix`
 
-Replace the existing `macAddressStartsWith` in `MacAddress.hpp` with a variadic
-`macAddressMatchesAny` that accepts any number of prefixes of any length:
+Replace the existing `macAddressStartsWith` in `MacAddress.hpp` with a variadic-bytes
+`macAddressHasPrefix` that accepts the prefix bytes directly as arguments:
 
 ```cpp
-template <typename... Prefixes>
+template <typename... Bytes>
 [[maybe_unused]]
-static bool macAddressMatchesAny(const Prefixes&... prefixes) {
-    return (... || std::equal(prefixes.begin(), prefixes.end(), getRawMacAddress().begin()));
+static bool macAddressHasPrefix(Bytes... bytes) {
+    const auto mac = getRawMacAddress();
+    const std::array<uint8_t, sizeof...(Bytes)> prefix { static_cast<uint8_t>(bytes)... };
+    return std::equal(prefix.begin(), prefix.end(), mac.begin());
 }
 ```
 
-Calling it with a single prefix is identical to the old `macAddressStartsWith`, so it is
-a strict superset with no reason to keep both. All existing call sites (currently in the
-MK6 and MK8 device files) are updated as part of the surrounding refactor steps.
-
-Multiple prefixes of varying lengths can be passed in a single call:
+Call sites pass raw hex literals with no array construction needed:
 
 ```cpp
-if (macAddressMatchesAny(
-        std::array<uint8_t, 2>{0x11, 0x22},
-        std::array<uint8_t, 4>{0xAA, 0xBB, 0xCC, 0xDD}))
+if (macAddressHasPrefix(0x34, 0x85, 0x18))
 ```
 
 ### Step 5 — Introduce MAC-Based Top-Level Dispatch
@@ -140,45 +136,55 @@ from production records before the consolidated binary ships.**
 // Pseudocode — dummy ranges marked TODO
 
 #ifdef CONFIG_IDF_TARGET_ESP32S3
-static void dispatchToDevice() {
+namespace {
+void dispatchToDevice() {
     // MK6 Rev1
-    if (macAddressMatchesAny(std::array<uint8_t, 3>{0x34, 0x85, 0x18}))
-        return startDevice<Mk6Settings, UglyDucklingMk6Rev1>();
+    if (macAddressHasPrefix(0x34, 0x85, 0x18)) {
+        startDevice<Mk6Settings, UglyDucklingMk6Rev1>(); return;
+    }
     // MK6 Rev2
-    if (macAddressMatchesAny(std::array<uint8_t, 4>{0xec, 0xda, 0x3b, 0x5b}))
-        return startDevice<Mk6Settings, UglyDucklingMk6Rev2>();
+    if (macAddressHasPrefix(0xEC, 0xDA, 0x3B, 0x5B)) {
+        startDevice<Mk6Settings, UglyDucklingMk6Rev2>(); return;
+    }
     // MK6 Rev3 — TODO: replace dummy ranges
-    if (macAddressMatchesAny(
-            std::array<uint8_t, 2>{0xAA, 0x01},
-            std::array<uint8_t, 3>{0xAA, 0x02, 0x03}))
-        return startDevice<Mk6Settings, UglyDucklingMk6Rev3>();
+    if (macAddressHasPrefix(0xAA, 0x01)) {
+        startDevice<Mk6Settings, UglyDucklingMk6Rev3>(); return;
+    }
     // MK5 — TODO: replace dummy range
-    if (macAddressMatchesAny(std::array<uint8_t, 2>{0xAA, 0x00}))
-        return startDevice<Mk5Settings, UglyDucklingMk5>();
+    if (macAddressHasPrefix(0xAA, 0x00)) {
+        startDevice<Mk5Settings, UglyDucklingMk5>(); return;
+    }
     // MK7 — TODO: replace dummy range
-    if (macAddressMatchesAny(std::array<uint8_t, 2>{0xAA, 0x04}))
-        return startDevice<Mk7Settings, UglyDucklingMk7>();
+    if (macAddressHasPrefix(0xAA, 0x04)) {
+        startDevice<Mk7Settings, UglyDucklingMk7>(); return;
+    }
     // MK8 Rev1
-    if (macAddressMatchesAny(std::array<uint8_t, 4>{0x98, 0xa3, 0x16, 0x1a}))
-        return startDevice<Mk8Settings, UglyDucklingMk8Rev1>();
+    if (macAddressHasPrefix(0x98, 0xA3, 0x16, 0x1A)) {
+        startDevice<Mk8Settings, UglyDucklingMk8Rev1>(); return;
+    }
     // MK8 Rev2 — TODO: replace dummy range
-    if (macAddressMatchesAny(std::array<uint8_t, 2>{0xAA, 0x05}))
-        return startDevice<Mk8Settings, UglyDucklingMk8Rev2>();
+    if (macAddressHasPrefix(0xAA, 0x05)) {
+        startDevice<Mk8Settings, UglyDucklingMk8Rev2>(); return;
+    }
 
     ESP_LOGE("device", "Unrecognized MAC address %s", getMacAddress().c_str());
     abort();
 }
+}    // namespace
 #endif
 
 #ifdef CONFIG_IDF_TARGET_ESP32C6
-static void dispatchToDevice() {
+namespace {
+void dispatchToDevice() {
     // MKX — TODO: add MAC range when known; currently the only C6 variant
-    if (macAddressMatchesAny(std::array<uint8_t, 2>{0xAA, 0x10}))
-        return startDevice<MkXSettings, UglyDucklingMkX>();
+    if (macAddressHasPrefix(0xAA, 0x10)) {
+        startDevice<MkXSettings, UglyDucklingMkX>(); return;
+    }
 
     ESP_LOGE("device", "Unrecognized MAC address %s", getMacAddress().c_str());
     abort();
 }
+}    // namespace
 #endif
 ```
 
@@ -289,7 +295,7 @@ The following information is needed before Step 5 can be fully implemented:
 1. Step 1 (pins to instance members + virtual battery driver) — foundational; the device files
    can still be included one at a time with `UD_GEN` while this is being done
 2. Steps 2–3 (flatten hierarchies) — behaviour-preserving; verify each MK revision separately
-3. Step 4 (`macAddressMatchesAny`) — small, self-contained addition to `MacAddress.hpp`
+3. Step 4 (`macAddressHasPrefix`) — small, self-contained addition to `MacAddress.hpp`
 4. Step 5 (MAC dispatch) — requires MAC range data from open question #1
 5. Step 6 (UD_GEN override + multi-device includes in `main.cpp`) — straightforward once step 5 is done
 6. Steps 7–8 (build/CI consolidation) — last, once runtime selection is proven correct
