@@ -42,7 +42,7 @@ using namespace farmhub::peripherals;
 namespace farmhub::devices {
 
 #define UD_DEFINE_PIN3(GPIO, VAR, STR) \
-    static const InternalPinPtr VAR = InternalPin::registerPin(STR, GPIO);
+    const InternalPinPtr VAR = InternalPin::registerPin(STR, GPIO);
 
 #define UD_DEFINE_PIN2(GPIO, VAR) \
     UD_DEFINE_PIN3(GPIO, VAR, #VAR)

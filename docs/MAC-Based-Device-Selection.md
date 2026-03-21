@@ -4,7 +4,7 @@
 
 Replace per-generation compile-time device selection with runtime MAC-address-based detection,
 consolidating the CI build matrix from one binary per hardware generation to one binary per
-chip platform (ESP32-S3 and ESP32-C6).
+IDF target (ESP32-S3 and ESP32-C6).
 
 ## Background
 
@@ -15,7 +15,7 @@ binaries (MK5, MK6, MK7, MK8, MKX), four of which target the same chip (ESP32-S3
 MK6 already contains a two-level hierarchy: the single `UglyDucklingMk6` class detects its
 hardware revision at runtime via `macAddressStartsWith()` and adjusts behavior accordingly
 (Rev1/Rev2 use `IOC2` for motor nSleep; Rev3 uses `LOADEN`). The plan extends this pattern
-to the top level, eliminating the compile-time generation split for same-platform devices.
+to the top level, eliminating the compile-time generation split for same-target devices.
 
 ## Technical Challenge: Pin Lifecycle
 
@@ -123,8 +123,8 @@ if (macAddressMatchesAny(
 
 ### Step 5 — Introduce MAC-Based Top-Level Dispatch
 
-Add a per-platform `dispatchToDevice()` function in `main/main.cpp` that selects the
-appropriate `DeviceDefinition` at runtime. Both platforms follow the same structure; the
+Add a per-target `dispatchToDevice()` function in `main/main.cpp` that selects the
+appropriate `DeviceDefinition` at runtime. Both targets follow the same structure; the
 C6 binary currently has only one variant but is wired up identically for consistency and
 to accommodate future additions.
 
@@ -215,7 +215,7 @@ extern "C" void app_main() {
 }
 ```
 
-The platform split (which device headers to include) is handled via
+The target split (which device headers to include) is handled via
 `CONFIG_IDF_TARGET_ESP32S3` / `CONFIG_IDF_TARGET_ESP32C6`, so each binary only pulls in
 the headers relevant to its chip.
 
@@ -225,7 +225,7 @@ test already passes `-DUD_GEN=MK6`; this continues to work unchanged.
 
 ### Step 7 — Consolidate CI Build Matrix
 
-Replace the per-generation matrix entries with per-platform entries:
+Replace the per-generation matrix entries with per-target entries:
 
 **Before (6 entries):**
 
@@ -251,18 +251,18 @@ Artifact filenames change from e.g. `ugly-duckling-mk6-release.bin` to
 `ugly-duckling-esp32s3-release.bin`.
 
 The `DeviceCommon.cmake` `UD_GEN` validation is relaxed: when `UD_GEN` is unset,
-the default target (`esp32s3`) is used without a fatal error.
+the IDF target is used directly without a fatal error.
 
 #### sdkconfig consolidation
 
 All S3 generations (`sdkconfig.mk5.defaults` through `sdkconfig.mk8.defaults`) are
 identical — all set `CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y`. MKX sets 8MB. Replace the
-five per-generation files with two platform files:
+five per-generation files with two target files:
 
 - `sdkconfig.esp32s3.defaults` — `CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y`
 - `sdkconfig.esp32c6.defaults` — `CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y`
 
-`DeviceCommon.cmake` is updated to load `sdkconfig.{platform}.defaults` instead of
+`DeviceCommon.cmake` is updated to load `sdkconfig.{target}.defaults` instead of
 `sdkconfig.{ud_gen_lower}.defaults`.
 
 ### Step 8 — Update Tests
