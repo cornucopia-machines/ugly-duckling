@@ -3,29 +3,68 @@
 #endif
 
 #include <Device.hpp>
+#include <MacAddress.hpp>
 
-#if defined(MK5)
+#ifdef CONFIG_IDF_TARGET_ESP32S3
 #include <devices/UglyDucklingMk5.hpp>
-using Definition = farmhub::devices::UglyDucklingMk5;
-using Settings = farmhub::devices::Mk5Settings;
-#elif defined(MK6)
 #include <devices/UglyDucklingMk6.hpp>
-using Definition = farmhub::devices::UglyDucklingMk6;
-using Settings = farmhub::devices::Mk6Settings;
-#elif defined(MK7)
 #include <devices/UglyDucklingMk7.hpp>
-using Definition = farmhub::devices::UglyDucklingMk7;
-using Settings = farmhub::devices::Mk7Settings;
-#elif defined(MK8)
 #include <devices/UglyDucklingMk8.hpp>
-using Definition = farmhub::devices::UglyDucklingMk8;
-using Settings = farmhub::devices::Mk8Settings;
-#elif defined(MKX)
+#endif
+
+#ifdef CONFIG_IDF_TARGET_ESP32C6
 #include <devices/UglyDucklingMkX.hpp>
-using Definition = farmhub::devices::UglyDucklingMkX;
-using Settings = farmhub::devices::MkXSettings;
-#else
-#error "No device defined"
+#endif
+
+using namespace farmhub::devices;
+using namespace farmhub::kernel;
+
+#ifdef CONFIG_IDF_TARGET_ESP32S3
+static void dispatchToDevice() {
+    // MK6 Rev1 — MAC prefix 0x34:0x85:0x18
+    if (macAddressMatchesAny(std::array<uint8_t, 3> { 0x34, 0x85, 0x18 }))
+        return startDevice<Mk6Settings, UglyDucklingMk6Rev1>();
+
+    // MK6 Rev2 — MAC prefix 0xec:0xda:0x3b:0x5b
+    if (macAddressMatchesAny(std::array<uint8_t, 4> { 0xec, 0xda, 0x3b, 0x5b }))
+        return startDevice<Mk6Settings, UglyDucklingMk6Rev2>();
+
+    // MK6 Rev3 — TODO: replace dummy ranges with actual production MAC ranges
+    if (macAddressMatchesAny(
+            std::array<uint8_t, 2> { 0xAA, 0x01 },
+            std::array<uint8_t, 3> { 0xAA, 0x02, 0x03 }))
+        return startDevice<Mk6Settings, UglyDucklingMk6Rev3>();
+
+    // MK5 — TODO: replace dummy range with actual production MAC range
+    if (macAddressMatchesAny(std::array<uint8_t, 2> { 0xAA, 0x00 }))
+        return startDevice<Mk5Settings, UglyDucklingMk5>();
+
+    // MK7 — TODO: replace dummy range with actual production MAC range
+    if (macAddressMatchesAny(std::array<uint8_t, 2> { 0xAA, 0x04 }))
+        return startDevice<Mk7Settings, UglyDucklingMk7>();
+
+    // MK8 Rev1 — MAC prefix 0x98:0xa3:0x16:0x1a
+    if (macAddressMatchesAny(std::array<uint8_t, 4> { 0x98, 0xa3, 0x16, 0x1a }))
+        return startDevice<Mk8Settings, UglyDucklingMk8Rev1>();
+
+    // MK8 Rev2 — TODO: replace dummy range with actual production MAC range
+    if (macAddressMatchesAny(std::array<uint8_t, 2> { 0xAA, 0x05 }))
+        return startDevice<Mk8Settings, UglyDucklingMk8Rev2>();
+
+    ESP_LOGE("device", "Unrecognized MAC address %s — cannot select device variant", getMacAddress().c_str());
+    abort();
+}
+#endif
+
+#ifdef CONFIG_IDF_TARGET_ESP32C6
+static void dispatchToDevice() {
+    // MKX — TODO: replace dummy range with actual production MAC range
+    if (macAddressMatchesAny(std::array<uint8_t, 2> { 0xAA, 0x10 }))
+        return startDevice<MkXSettings, UglyDucklingMkX>();
+
+    ESP_LOGE("device", "Unrecognized MAC address %s — cannot select device variant", getMacAddress().c_str());
+    abort();
+}
 #endif
 
 extern "C" void app_main() {
@@ -34,5 +73,23 @@ extern "C" void app_main() {
     printf("\033[0m");
 #endif
 
-    startDevice<Settings, Definition>();
+#if defined(MK5)
+    startDevice<Mk5Settings, UglyDucklingMk5>();
+#elif defined(MK6)
+    startDevice<Mk6Settings, UglyDucklingMk6Rev3>();
+#elif defined(MK6_REV1)
+    startDevice<Mk6Settings, UglyDucklingMk6Rev1>();
+#elif defined(MK6_REV2)
+    startDevice<Mk6Settings, UglyDucklingMk6Rev2>();
+#elif defined(MK7)
+    startDevice<Mk7Settings, UglyDucklingMk7>();
+#elif defined(MK8)
+    startDevice<Mk8Settings, UglyDucklingMk8Rev2>();
+#elif defined(MK8_REV1)
+    startDevice<Mk8Settings, UglyDucklingMk8Rev1>();
+#elif defined(MKX)
+    startDevice<MkXSettings, UglyDucklingMkX>();
+#else
+    dispatchToDevice();
+#endif
 }

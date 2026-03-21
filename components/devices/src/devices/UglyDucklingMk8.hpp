@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include <memory>
 
 #include <MacAddress.hpp>
 #include <Pin.hpp>
@@ -22,163 +22,133 @@ using namespace farmhub::peripherals::valve;
 
 namespace farmhub::devices {
 
-namespace pins {
-DEFINE_PIN(GPIO_NUM_0, BOOT);
-
-// Internal I2C
-DEFINE_PIN(GPIO_NUM_1, SDA);
-DEFINE_PIN(GPIO_NUM_2, SCL);
-
-// Watchdog interrupt
-DEFINE_PIN(GPIO_NUM_3, WDI);
-
-// Port B pins
-DEFINE_PIN(GPIO_NUM_4, IOB3, "B3");
-DEFINE_PIN(GPIO_NUM_5, IOB1, "B1");
-DEFINE_PIN(GPIO_NUM_6, IOB2, "B2");
-DEFINE_PIN(GPIO_NUM_7, IOB4, "B4");
-
-// Battery fuel gauge interrupt
-DEFINE_PIN(GPIO_NUM_8, BAT_GAUGE);
-
-// SPI for e-ink display
-DEFINE_PIN(GPIO_NUM_9, SBUSY);
-DEFINE_PIN(GPIO_NUM_10, SCS);
-DEFINE_PIN(GPIO_NUM_11, SSDI);
-DEFINE_PIN(GPIO_NUM_12, SSCLK);
-DEFINE_PIN(GPIO_NUM_13, SRES);
-DEFINE_PIN(GPIO_NUM_14, SDC);
-
-// Port A pins
-DEFINE_PIN(GPIO_NUM_15, IOA3, "A3");
-DEFINE_PIN(GPIO_NUM_16, IOA1, "A1");
-DEFINE_PIN(GPIO_NUM_17, IOA2, "A2");
-DEFINE_PIN(GPIO_NUM_18, IOA4, "A4");
-
-// USB
-DEFINE_PIN(GPIO_NUM_19, DMINUS, "D-");
-DEFINE_PIN(GPIO_NUM_20, DPLUS, "D+");
-
-// GPIO_NUM_21 is NC
-
-// Motor control pins
-DEFINE_PIN(GPIO_NUM_35, DAIN2);
-DEFINE_PIN(GPIO_NUM_36, DAIN1);
-DEFINE_PIN(GPIO_NUM_37, DBIN1);
-DEFINE_PIN(GPIO_NUM_38, DBIN2);
-
-// Debug
-DEFINE_PIN(GPIO_NUM_39, TCK);
-DEFINE_PIN(GPIO_NUM_40, TDO);
-DEFINE_PIN(GPIO_NUM_41, TDI);
-DEFINE_PIN(GPIO_NUM_42, TMS);
-
-// UART
-DEFINE_PIN(GPIO_NUM_43, RXD0);
-DEFINE_PIN(GPIO_NUM_44, TXD0);
-
-// Status LEDs
-DEFINE_PIN(GPIO_NUM_45, STATUS);
-DEFINE_PIN(GPIO_NUM_46, STATUS2);
-
-// Enable / disable external load
-DEFINE_PIN(GPIO_NUM_47, LOADEN);
-
-// Motor fault pin
-DEFINE_PIN(GPIO_NUM_48, NFAULT);
-}    // namespace pins
-
 class Mk8Settings
     : public DeviceSettings {
 public:
     Mk8Settings()
         : DeviceSettings("mk8") {
     }
-
-    /**
-     * @brief Disable the built-in current sensor (useful for faulty revision 1 units).
-     */
-    Property<bool> disableIna219 { this, "disableIna219" };
 };
 
-class UglyDucklingMk8 : public DeviceDefinition<Mk8Settings> {
+class UglyDucklingMk8Base : public DeviceDefinition<Mk8Settings> {
 public:
-    UglyDucklingMk8()
-        : DeviceDefinition(pins::STATUS, pins::BOOT) {
+    UglyDucklingMk8Base()
+        : DeviceDefinition(
+            InternalPin::registerPin("STATUS", GPIO_NUM_45),
+            InternalPin::registerPin("BOOT", GPIO_NUM_0)) {
         // Switch off strapping pin
         // TODO: Add a LED driver instead
-        pins::STATUS2->pinMode(Pin::Mode::Output);
-        pins::STATUS2->digitalWrite(1);
+        STATUS2->pinMode(Pin::Mode::Output);
+        STATUS2->digitalWrite(1);
     }
 
-    static std::shared_ptr<BatteryDriver> createBatteryDriver(const std::shared_ptr<I2CManager>& i2c) {
-        auto batteryDriver = std::make_shared<Bq27220Driver>(
+    std::shared_ptr<BatteryDriver> createBatteryDriver(const std::shared_ptr<I2CManager>& i2c) override {
+        return std::make_shared<Bq27220Driver>(
             i2c,
-            pins::SDA,
-            pins::SCL,
+            SDA,
+            SCL,
             BatteryParameters {
                 .maximumVoltage = 4100,
                 .bootThreshold = 3500,
                 .shutdownThreshold = 3300,
             });
-
-        // Task::loop("battery-display", 4096, [batteryDriver](Task& task) {
-        //     LOGD("Battery: %d mV, %d%%, %.1f mA",
-        //         batteryDriver->getVoltage(),
-        //         batteryDriver->getPercentage(),
-        //         batteryDriver->getCurrent().value_or(0.0));
-        //     Task::delay(1s);
-        // });
-
-        return batteryDriver;
     }
 
 protected:
-    void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<Mk8Settings>& settings) override {
+    void registerMotorAndValves(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services) {
         auto motorDriver = Drv8848Driver::create(
             services.pwmManager,
-            pins::DAIN1,
-            pins::DAIN2,
-            pins::DBIN1,
-            pins::DBIN2,
-            pins::NFAULT,
-            pins::LOADEN);
+            DAIN1,
+            DAIN2,
+            DBIN1,
+            DBIN2,
+            NFAULT,
+            LOADEN);
 
         std::map<std::string, std::shared_ptr<PwmMotorDriver>> motors = { { "a", motorDriver->getMotorA() }, { "b", motorDriver->getMotorB() } };
 
-        // Disable INA219 on MK8 Revision 1 units by default because of a hardware fault
-        // Most units have been fixed manually, but it's better to err on the side of caution by default
-        auto disableIna219ByDefault = macAddressStartsWith(std::array<uint8_t, 4> { 0x98, 0xa3, 0x16, 0x1a });
-        if (!settings->disableIna219.getOrDefault(disableIna219ByDefault)) {
-            ina219 = std::make_shared<Ina219Driver>(
-                services.i2c,
-                I2CConfig {
-                    .address = Ina219Driver::DEFAULT_ADDRESS,
-                    .sda = pins::SDA,
-                    .scl = pins::SCL,
-                },
-                Ina219Parameters {
-                    .uRange = INA219_BUS_RANGE_16V,
-                    .gain = INA219_GAIN_0_125,
-                    .uResolution = INA219_RES_12BIT_1S,
-                    .iResolution = INA219_RES_12BIT_1S,
-                    .mode = INA219_MODE_CONT_SHUNT_BUS,
-                    .shuntMilliOhm = 50,
-                });
-
-            // ina219->setEnabled(true);
-            // Task::loop("power", 4096, [this](Task& task) {
-            //     LOGD("INA219 readings: %f V (BUS), %f V (shunt), %f A, %f W",
-            //         ina219->getBusVoltage(),
-            //         ina219->getShuntVoltage(),
-            //         ina219->getCurrent(),
-            //         ina219->getPower());
-            //     Task::delay(1s);
-            // });
-        }
-
         peripheralManager->registerFactory(valve::makeFactory(motors, ValveControlStrategyType::Latching));
         peripheralManager->registerFactory(door::makeFactory(motors));
+    }
+
+protected:
+    // Internal I2C
+    const InternalPinPtr SDA = InternalPin::registerPin("SDA", GPIO_NUM_1);
+    const InternalPinPtr SCL = InternalPin::registerPin("SCL", GPIO_NUM_2);
+    // Watchdog interrupt
+    const InternalPinPtr WDI = InternalPin::registerPin("WDI", GPIO_NUM_3);
+    // Port B pins
+    const InternalPinPtr IOB3 = InternalPin::registerPin("B3", GPIO_NUM_4);
+    const InternalPinPtr IOB1 = InternalPin::registerPin("B1", GPIO_NUM_5);
+    const InternalPinPtr IOB2 = InternalPin::registerPin("B2", GPIO_NUM_6);
+    const InternalPinPtr IOB4 = InternalPin::registerPin("B4", GPIO_NUM_7);
+    // Battery fuel gauge interrupt
+    const InternalPinPtr BAT_GAUGE = InternalPin::registerPin("BAT_GAUGE", GPIO_NUM_8);
+    // SPI for e-ink display
+    const InternalPinPtr SBUSY = InternalPin::registerPin("SBUSY", GPIO_NUM_9);
+    const InternalPinPtr SCS = InternalPin::registerPin("SCS", GPIO_NUM_10);
+    const InternalPinPtr SSDI = InternalPin::registerPin("SSDI", GPIO_NUM_11);
+    const InternalPinPtr SSCLK = InternalPin::registerPin("SSCLK", GPIO_NUM_12);
+    const InternalPinPtr SRES = InternalPin::registerPin("SRES", GPIO_NUM_13);
+    const InternalPinPtr SDC = InternalPin::registerPin("SDC", GPIO_NUM_14);
+    // Port A pins
+    const InternalPinPtr IOA3 = InternalPin::registerPin("A3", GPIO_NUM_15);
+    const InternalPinPtr IOA1 = InternalPin::registerPin("A1", GPIO_NUM_16);
+    const InternalPinPtr IOA2 = InternalPin::registerPin("A2", GPIO_NUM_17);
+    const InternalPinPtr IOA4 = InternalPin::registerPin("A4", GPIO_NUM_18);
+    // USB
+    const InternalPinPtr DMINUS = InternalPin::registerPin("D-", GPIO_NUM_19);
+    const InternalPinPtr DPLUS = InternalPin::registerPin("D+", GPIO_NUM_20);
+    // Motor control pins
+    const InternalPinPtr DAIN2 = InternalPin::registerPin("DAIN2", GPIO_NUM_35);
+    const InternalPinPtr DAIN1 = InternalPin::registerPin("DAIN1", GPIO_NUM_36);
+    const InternalPinPtr DBIN1 = InternalPin::registerPin("DBIN1", GPIO_NUM_37);
+    const InternalPinPtr DBIN2 = InternalPin::registerPin("DBIN2", GPIO_NUM_38);
+    // Debug
+    const InternalPinPtr TCK = InternalPin::registerPin("TCK", GPIO_NUM_39);
+    const InternalPinPtr TDO = InternalPin::registerPin("TDO", GPIO_NUM_40);
+    const InternalPinPtr TDI = InternalPin::registerPin("TDI", GPIO_NUM_41);
+    const InternalPinPtr TMS = InternalPin::registerPin("TMS", GPIO_NUM_42);
+    // UART
+    const InternalPinPtr RXD0 = InternalPin::registerPin("RXD0", GPIO_NUM_43);
+    const InternalPinPtr TXD0 = InternalPin::registerPin("TXD0", GPIO_NUM_44);
+    // Status LEDs
+    const InternalPinPtr STATUS2 = InternalPin::registerPin("STATUS2", GPIO_NUM_46);
+    // Enable / disable external load
+    const InternalPinPtr LOADEN = InternalPin::registerPin("LOADEN", GPIO_NUM_47);
+    // Motor fault pin
+    const InternalPinPtr NFAULT = InternalPin::registerPin("NFAULT", GPIO_NUM_48);
+};
+
+// MAC prefix 0x98:0xa3:0x16:0x1a — INA219 omitted due to hardware fault on these units
+class UglyDucklingMk8Rev1 : public UglyDucklingMk8Base {
+protected:
+    void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<Mk8Settings>& /*settings*/) override {
+        registerMotorAndValves(peripheralManager, services);
+    }
+};
+
+// All other known MK8 MAC ranges — INA219 included
+class UglyDucklingMk8Rev2 : public UglyDucklingMk8Base {
+protected:
+    void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<Mk8Settings>& /*settings*/) override {
+        registerMotorAndValves(peripheralManager, services);
+
+        ina219 = std::make_shared<Ina219Driver>(
+            services.i2c,
+            I2CConfig {
+                .address = Ina219Driver::DEFAULT_ADDRESS,
+                .sda = SDA,
+                .scl = SCL,
+            },
+            Ina219Parameters {
+                .uRange = INA219_BUS_RANGE_16V,
+                .gain = INA219_GAIN_0_125,
+                .uResolution = INA219_RES_12BIT_1S,
+                .iResolution = INA219_RES_12BIT_1S,
+                .mode = INA219_MODE_CONT_SHUNT_BUS,
+                .shuntMilliOhm = 50,
+            });
     }
 
 private:

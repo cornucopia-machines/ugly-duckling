@@ -147,9 +147,9 @@ static void performFactoryReset(const std::shared_ptr<LedDriver>& statusLed, boo
     esp_restart();
 }
 
-template <class TDeviceDefinition>
-std::shared_ptr<BatteryDriver> initBattery(const std::shared_ptr<I2CManager>& i2c) {
-    auto battery = TDeviceDefinition::createBatteryDriver(i2c);
+template <std::derived_from<DeviceSettings> TDeviceSettings>
+std::shared_ptr<BatteryDriver> initBattery(const std::shared_ptr<DeviceDefinition<TDeviceSettings>>& deviceDefinition, const std::shared_ptr<I2CManager>& i2c) {
+    auto battery = deviceDefinition->createBatteryDriver(i2c);
     if (battery != nullptr) {
         // If the battery voltage is below the device's threshold, we should not boot yet.
         // This is to prevent the device from booting and immediately shutting down
@@ -339,7 +339,8 @@ enum class InitState : std::uint8_t {
 template <std::derived_from<DeviceSettings> TDeviceSettings, std::derived_from<DeviceDefinition<TDeviceSettings>> TDeviceDefinition>
 static void startDevice() {
     auto i2c = std::make_shared<I2CManager>();
-    auto battery = initBattery<TDeviceDefinition>(i2c);
+    auto deviceDefinition = std::make_shared<TDeviceDefinition>();
+    auto battery = initBattery<TDeviceSettings>(deviceDefinition, i2c);
 
     initNvsFlash();
 
@@ -349,8 +350,6 @@ static void startDevice() {
 #ifdef CONFIG_HEAP_TRACING
     ESP_ERROR_CHECK(heap_trace_init_standalone(trace_record, NUM_RECORDS));
 #endif
-
-    auto deviceDefinition = std::make_shared<TDeviceDefinition>();
 
     auto configNvs = std::make_shared<NvsStore>("config");
 

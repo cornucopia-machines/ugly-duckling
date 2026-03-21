@@ -32,12 +32,11 @@ static const std::string& getMacAddress() {
     return macAddress;
 }
 
-template <size_t L>
-    requires(L <= MAC_ADDRESS_LENGTH)
+template <typename... Prefixes>
 [[maybe_unused]]
-static bool macAddressStartsWith(const std::array<uint8_t, L>& prefix) {
+static bool macAddressMatchesAny(const Prefixes&... prefixes) {
     const auto mac = getRawMacAddress();
-    return std::equal(prefix.begin(), prefix.end(), mac.begin());
+    return (... || std::equal(prefixes.begin(), prefixes.end(), mac.begin()));
 }
 
 }    // namespace farmhub::kernel
