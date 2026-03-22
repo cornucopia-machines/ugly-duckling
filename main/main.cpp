@@ -2,31 +2,32 @@
 #include <cstdio>
 #endif
 
-#include <cstdlib>
-
 #include <esp_log.h>
 #include <esp_system.h>
 
 #include <Device.hpp>
 #include <MacAddress.hpp>
 
-#ifdef CONFIG_IDF_TARGET_ESP32S3
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
 #include <devices/UglyDucklingMk5.hpp>
 #include <devices/UglyDucklingMk6.hpp>
 #include <devices/UglyDucklingMk7.hpp>
 #include <devices/UglyDucklingMk8.hpp>
+
+#elif defined(CONFIG_IDF_TARGET_ESP32C6)
+// TODO Add device variants for ESP32C6
+#else
+#error "Unsupported target"
 #endif
 
-#ifdef CONFIG_IDF_TARGET_ESP32C6
-#include <devices/UglyDucklingMkX.hpp>
-#endif
+#include <devices/GenericDevice.hpp>
 
 using namespace farmhub::devices;
 using namespace farmhub::kernel;
 
-#ifdef CONFIG_IDF_TARGET_ESP32S3
 namespace {
-void dispatchToDevice() {
+void startDeviceBasedOnMac() {
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
     // MK5 Rev2
     if (macAddressHasPrefix(0xF4, 0x12, 0xFA, 0x52)) {
         startDevice<UglyDucklingMk5>();
@@ -63,26 +64,14 @@ void dispatchToDevice() {
         return;
     }
 
-    ESP_LOGE("device", "Unrecognized MAC address %s — cannot select device variant", getMacAddress().c_str());
-    esp_system_abort("Unrecognized MAC address");
-}
-}    // namespace
+#elif defined(CONFIG_IDF_TARGET_ESP32C6)
+    // TODO Add device variants for ESP32C6
 #endif
 
-#ifdef CONFIG_IDF_TARGET_ESP32C6
-namespace {
-void dispatchToDevice() {
-    // MKX — TODO: add actual production MAC range
-    if (macAddressHasPrefix()) {
-        startDevice<UglyDucklingMkX>();
-        return;
-    }
-
-    ESP_LOGE("device", "Unrecognized MAC address %s — cannot select device variant", getMacAddress().c_str());
-    esp_system_abort("Unrecognized MAC address");
+    ESP_LOGW("device", "Unrecognized MAC address %s — falling back to generic device", getMacAddress().c_str());
+    startDevice<GenericDevice>();
 }
 }    // namespace
-#endif
 
 extern "C" void app_main() {
 #ifdef FARMHUB_DEBUG
@@ -107,6 +96,6 @@ extern "C" void app_main() {
 #elif defined(MKX)
     startDevice<UglyDucklingMkX>();
 #else
-    dispatchToDevice();
+    startDeviceBasedOnMac();
 #endif
 }

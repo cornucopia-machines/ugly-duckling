@@ -11,10 +11,22 @@ using namespace farmhub::kernel;
 
 namespace farmhub::devices {
 
-class UglyDucklingMkX : public DeviceDefinition {
+class GenericDevice : public DeviceDefinition {
 public:
-    UglyDucklingMkX()
-        : DeviceDefinition({ .model = "mkx", .revision = 1, .boot = GPIO_NUM_9, .status = GPIO_NUM_1 }) {
+    GenericDevice()
+        : DeviceDefinition({
+              .model = "generic",
+              .revision = 1,
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+              .boot = GPIO_NUM_0,
+              .status = GPIO_NUM_48,
+#elif defined(CONFIG_IDF_TARGET_ESP32C6)
+              .boot = GPIO_NUM_9,
+              .status = GPIO_NUM_8,
+#else
+#error "Unsupported target"
+#endif
+          }) {
     }
 
 protected:
