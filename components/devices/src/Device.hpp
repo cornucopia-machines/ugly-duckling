@@ -147,8 +147,7 @@ static void performFactoryReset(const std::shared_ptr<LedDriver>& statusLed, boo
     esp_restart();
 }
 
-template <std::derived_from<DeviceSettings> TDeviceSettings>
-std::shared_ptr<BatteryDriver> initBattery(const std::shared_ptr<DeviceDefinition<TDeviceSettings>>& deviceDefinition, const std::shared_ptr<I2CManager>& i2c) {
+std::shared_ptr<BatteryDriver> initBattery(const std::shared_ptr<DeviceDefinition>& deviceDefinition, const std::shared_ptr<I2CManager>& i2c) {
     auto battery = deviceDefinition->createBatteryDriver(i2c);
     if (battery != nullptr) {
         // If the battery voltage is below the device's threshold, we should not boot yet.
@@ -336,11 +335,11 @@ enum class InitState : std::uint8_t {
     FunctionError = 2,
 };
 
-template <std::derived_from<DeviceSettings> TDeviceSettings, std::derived_from<DeviceDefinition<TDeviceSettings>> TDeviceDefinition>
+template <std::derived_from<DeviceDefinition> TDeviceDefinition>
 static void startDevice() {
     auto i2c = std::make_shared<I2CManager>();
     auto deviceDefinition = std::make_shared<TDeviceDefinition>();
-    auto battery = initBattery<TDeviceSettings>(deviceDefinition, i2c);
+    auto battery = initBattery(deviceDefinition, i2c);
 
     initNvsFlash();
 
@@ -359,9 +358,9 @@ static void startDevice() {
     });
 
     auto networkConfig = loadConfigFromNvs<NetworkConfig>(configNvs, "network-config");
-    auto settings = loadConfigFromNvs<TDeviceSettings>(configNvs, "device-config");
+    auto settings = loadConfigFromNvs<DeviceSettings>(configNvs, "device-config");
 
-    const std::string modelWithRevision = settings->model.get() + " (rev" + std::to_string(deviceDefinition->revision) + ")";
+    const std::string modelWithRevision = deviceDefinition->model + " (rev" + std::to_string(deviceDefinition->revision) + ")";
 
     auto watchdog = initWatchdog(settings->watchdogTimeout.get());
 

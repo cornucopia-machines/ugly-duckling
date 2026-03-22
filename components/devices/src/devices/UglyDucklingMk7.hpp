@@ -17,15 +17,7 @@ using namespace farmhub::peripherals::valve;
 
 namespace farmhub::devices {
 
-class Mk7Settings
-    : public DeviceSettings {
-public:
-    Mk7Settings()
-        : DeviceSettings("mk7") {
-    }
-};
-
-class UglyDucklingMk7 : public DeviceDefinition<Mk7Settings> {
+class UglyDucklingMk7 : public DeviceDefinition {
 public:
     UglyDucklingMk7()
         : DeviceDefinition({ .model = "mk7", .revision = 1, .boot = GPIO_NUM_0, .status = GPIO_NUM_15 }) {
@@ -48,7 +40,7 @@ public:
     }
 
 protected:
-    void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<Mk7Settings>& /*settings*/) override {
+    void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<DeviceSettings>& /*settings*/) override {
         auto motorDriver = Drv8833Driver::create(
             services.pwmManager,
             DAIN1,

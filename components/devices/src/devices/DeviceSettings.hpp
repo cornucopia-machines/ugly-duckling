@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string>
-
 #include <Configuration.hpp>
 
 using namespace farmhub::kernel;
@@ -9,12 +7,6 @@ using namespace farmhub::kernel;
 namespace farmhub::devices {
 
 struct DeviceSettings : ConfigurationSection {
-    DeviceSettings(const std::string& defaultModel)
-        : model(this, "model", defaultModel) {
-    }
-
-    Property<std::string> model;
-
     ArrayProperty<JsonAsString> peripherals { this, "peripherals" };
     ArrayProperty<JsonAsString> functions { this, "functions" };
 

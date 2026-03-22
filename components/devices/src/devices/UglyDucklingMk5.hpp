@@ -16,22 +16,14 @@ using namespace farmhub::peripherals::valve;
 
 namespace farmhub::devices {
 
-class Mk5Settings
-    : public DeviceSettings {
-public:
-    Mk5Settings()
-        : DeviceSettings("mk5") {
-    }
-};
-
-class UglyDucklingMk5 : public DeviceDefinition<Mk5Settings> {
+class UglyDucklingMk5 : public DeviceDefinition {
 public:
     UglyDucklingMk5()
         : DeviceDefinition({ .model = "mk5", .revision = 2, .boot = GPIO_NUM_0, .status = GPIO_NUM_2 }) {
     }
 
 protected:
-    void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<Mk5Settings>& /*settings*/) override {
+    void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<DeviceSettings>& /*settings*/) override {
         auto motorA = std::make_shared<Drv8874Driver>(
             services.pwmManager,
             AIN1,

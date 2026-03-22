@@ -22,15 +22,7 @@ using namespace farmhub::peripherals::valve;
 
 namespace farmhub::devices {
 
-class Mk8Settings
-    : public DeviceSettings {
-public:
-    Mk8Settings()
-        : DeviceSettings("mk8") {
-    }
-};
-
-class UglyDucklingMk8Base : public DeviceDefinition<Mk8Settings> {
+class UglyDucklingMk8Base : public DeviceDefinition {
 public:
     explicit UglyDucklingMk8Base(int revision)
         : DeviceDefinition({ .model = "mk8", .revision = revision, .boot = GPIO_NUM_0, .status = GPIO_NUM_45 }) {
@@ -123,7 +115,7 @@ public:
     UglyDucklingMk8Rev1() : UglyDucklingMk8Base(1) {}
 
 protected:
-    void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<Mk8Settings>& /*settings*/) override {
+    void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<DeviceSettings>& /*settings*/) override {
         registerMotorAndValves(peripheralManager, services);
     }
 };
@@ -133,7 +125,7 @@ class UglyDucklingMk8Rev2 : public UglyDucklingMk8Base {
 public:
     UglyDucklingMk8Rev2() : UglyDucklingMk8Base(2) {}
 protected:
-    void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<Mk8Settings>& /*settings*/) override {
+    void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<DeviceSettings>& /*settings*/) override {
         registerMotorAndValves(peripheralManager, services);
 
         ina219 = std::make_shared<Ina219Driver>(

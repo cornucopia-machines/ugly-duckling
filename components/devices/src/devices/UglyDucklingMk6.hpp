@@ -20,15 +20,7 @@ using namespace farmhub::peripherals::valve;
 
 namespace farmhub::devices {
 
-class Mk6Settings
-    : public DeviceSettings {
-public:
-    Mk6Settings()
-        : DeviceSettings("mk6") {
-    }
-};
-
-class UglyDucklingMk6Base : public DeviceDefinition<Mk6Settings> {
+class UglyDucklingMk6Base : public DeviceDefinition {
 public:
     explicit UglyDucklingMk6Base(int revision)
         : DeviceDefinition({ .model = "mk6", .revision = revision, .boot = GPIO_NUM_0, .status = GPIO_NUM_2 }) {
@@ -52,7 +44,7 @@ public:
 protected:
     virtual PinPtr motorNSleepPin() const = 0;
 
-    void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<Mk6Settings>& /*settings*/) override {
+    void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<DeviceSettings>& /*settings*/) override {
         auto motorDriver = Drv8833Driver::create(
             services.pwmManager,
             AIN1,

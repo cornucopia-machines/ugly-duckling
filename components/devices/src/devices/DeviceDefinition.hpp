@@ -1,6 +1,5 @@
 #pragma once
 
-#include <concepts>
 #include <list>
 #include <memory>
 #include <string>
@@ -60,7 +59,6 @@ struct DeviceConfig {
     gpio_num_t status;
 };
 
-template <std::derived_from<DeviceSettings> TDeviceSettings>
 class DeviceDefinition {
 public:
     explicit DeviceDefinition(DeviceConfig config)
@@ -72,7 +70,7 @@ public:
 
     virtual ~DeviceDefinition() = default;
 
-    void registerPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<TDeviceSettings>& settings) {
+    void registerPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<DeviceSettings>& settings) {
         peripheralManager->registerFactory(environment::makeFactoryForSht3x());
         // TODO Unify these two factories
         peripheralManager->registerFactory(environment::makeFactoryForSht2x("sht2x"));
@@ -119,7 +117,7 @@ public:
     const InternalPinPtr statusPin;
 
 protected:
-    virtual void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<TDeviceSettings>& settings) {
+    virtual void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<DeviceSettings>& /*settings*/) {
     }
 };
 
