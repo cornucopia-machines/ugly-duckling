@@ -262,8 +262,8 @@ the IDF target is used directly without a fatal error.
 #### sdkconfig consolidation
 
 All S3 generations (`sdkconfig.mk5.defaults` through `sdkconfig.mk8.defaults`) are
-identical — all set `CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y`. MKX sets 8MB. Replace the
-five per-generation files with two target files:
+identical — all set `CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y`. For C6 generations we use 8MB.
+Replace the five per-generation files with two target files:
 
 - `sdkconfig.esp32s3.defaults` — `CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y`
 - `sdkconfig.esp32c6.defaults` — `CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y`
@@ -280,13 +280,13 @@ revision is running without inspecting the MAC address manually.
 `DeviceDefinition` gains a `const int revision` member (default `1`) set via a constructor
 parameter. Each concrete class or abstract base passes its revision integer:
 
-| Class | Revision |
-|---|---|
-| `UglyDucklingMk5` | `2` |
+| Class                     | Revision        |
+| ------------------------- | --------------- |
+| `UglyDucklingMk5`         | `2`             |
 | `UglyDucklingMk6Rev1/2/3` | `1` / `2` / `3` |
-| `UglyDucklingMk7` | `1` (default) |
-| `UglyDucklingMk8Rev1/2` | `1` / `2` |
-| `UglyDucklingMkX` | `1` (default) |
+| `UglyDucklingMk7`         | `1` (default)   |
+| `UglyDucklingMk8Rev1/2`   | `1` / `2`       |
+| `UglyDucklingMkX`         | `1` (default)   |
 
 `startDevice()` builds a `modelWithRevision` string (e.g. `"mk6 (rev3)"`) used in both
 boot log messages. The MQTT `init` message gains a `"revision"` integer field alongside

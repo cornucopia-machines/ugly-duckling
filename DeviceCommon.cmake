@@ -10,7 +10,7 @@ set_property(GLOBAL PROPERTY UD_GEN_TRACKER "${UD_GEN}")
 
 # Determine the expected IDF target for this generation
 set(ESP32_S3_GENS MK5 MK6 MK6_REV1 MK6_REV2 MK6_REV3 MK7 MK8 MK8_REV1 MK8_REV2)
-set(ESP32_C6_GENS MKX)
+set(ESP32_C6_GENS)  # No C6 generations yet, but set up the structure for future additions
 
 if(UD_GEN STREQUAL "")
     # No generation override — infer target from IDF_TARGET
