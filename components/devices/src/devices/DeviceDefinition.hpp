@@ -1,9 +1,10 @@
 #pragma once
 
-#include <concepts>
 #include <list>
 #include <memory>
-#include <utility>
+#include <string>
+
+#include <Pin.hpp>
 
 #include <ArduinoJson.h>
 
@@ -42,7 +43,7 @@ using namespace farmhub::peripherals;
 namespace farmhub::devices {
 
 #define UD_DEFINE_PIN3(GPIO, VAR, STR) \
-    static const InternalPinPtr VAR = InternalPin::registerPin(STR, GPIO);
+    const InternalPinPtr VAR = InternalPin::registerPin(STR, GPIO);
 
 #define UD_DEFINE_PIN2(GPIO, VAR) \
     UD_DEFINE_PIN3(GPIO, VAR, #VAR)
@@ -51,17 +52,25 @@ namespace farmhub::devices {
 
 #define DEFINE_PIN(...) UD_GET_MACRO(__VA_ARGS__, UD_DEFINE_PIN3, UD_DEFINE_PIN2)(__VA_ARGS__)
 
-template <std::derived_from<DeviceSettings> TDeviceSettings>
+struct DeviceConfig {
+    std::string model;
+    int revision;
+    gpio_num_t boot;
+    gpio_num_t status;
+};
+
 class DeviceDefinition {
 public:
-    DeviceDefinition(PinPtr statusPin, InternalPinPtr bootPin)
-        : statusPin(std::move(statusPin))
-        , bootPin(std::move(bootPin)) {
+    explicit DeviceDefinition(DeviceConfig config)
+        : model(std::move(config.model))
+        , revision(config.revision)
+        , bootPin(InternalPin::registerPin("BOOT", config.boot))
+        , statusPin(InternalPin::registerPin("STATUS", config.status)) {
     }
 
     virtual ~DeviceDefinition() = default;
 
-    void registerPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<TDeviceSettings>& settings) {
+    void registerPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<DeviceSettings>& settings) {
         peripheralManager->registerFactory(environment::makeFactoryForSht3x());
         // TODO Unify these two factories
         peripheralManager->registerFactory(environment::makeFactoryForSht2x("sht2x"));
@@ -98,15 +107,17 @@ public:
         return {};
     }
 
-    static std::shared_ptr<BatteryDriver> createBatteryDriver(const std::shared_ptr<I2CManager>& /*i2c*/) {
+    virtual std::shared_ptr<BatteryDriver> createBatteryDriver(const std::shared_ptr<I2CManager>& /*i2c*/) {
         return nullptr;
     }
 
-    const PinPtr statusPin;
+    const std::string model;
+    const int revision;
     const InternalPinPtr bootPin;
+    const InternalPinPtr statusPin;
 
 protected:
-    virtual void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<TDeviceSettings>& settings) {
+    virtual void registerDeviceSpecificPeripheralFactories(const std::shared_ptr<PeripheralManager>& peripheralManager, const PeripheralServices& services, const std::shared_ptr<DeviceSettings>& /*settings*/) {
     }
 };
 
